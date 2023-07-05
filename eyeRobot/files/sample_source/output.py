@@ -1,6 +1,6 @@
 import cv2
  
-c = cv2.VideoCapture(0+cv2.CAP_DSHOW)               
+c = cv2.VideoCapture(1)               
 c.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 c.set(cv2.CAP_PROP_FPS, 200)           # カメラFPSを60FPSに設定
 c.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) # カメラ画像の横幅を1280に設定

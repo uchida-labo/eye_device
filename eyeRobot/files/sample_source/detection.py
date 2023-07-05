@@ -1,20 +1,20 @@
 import cv2
-from cv2 import bitwise_not
 import numpy as np
 from matplotlib import pyplot as plt
+import serial
 
-# Trimming　area
-xmin, xmax = 240, 400  #100 , 500
+# Trimming area
+xmin, xmax = 240, 320  #100 , 500
 ymin, ymax = 180, 240  #100 , 300
 
 # Setting of USB camera
-cap = cv2.VideoCapture(2)  # 0+cv2.CAP_DSHOW
+cap = cv2.VideoCapture(1)  # 0+cv2.CAP_DSHOW
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-cap.set(cv2.CAP_PROP_FPS, 100) # カメラFPS設定
+cap.set(cv2.CAP_PROP_FPS, 15) # カメラFPS設定
 width = cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540) # カメラ画像の横幅設定  1280pxel
 height = cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) # カメラ画像の縦幅設定  720pxel
 
-# Function of P-tile threshold 
+# Function of P-tile threshold
 def p_tile_threshold(img_gry, per):
     """
     Pタイル法による2値化処理
@@ -56,31 +56,60 @@ def draw(video, point, radius):
     cv2.circle(video, pts, r, (100, 255, 0), 2)
     cv2.circle(video, pts, 2, (0,0,255), 3)     #中心点を描画
 
-fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows = False)
-kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(1,1))
+# Function of getting points
+def getpoint(xcenter, ycenter):
+    wm, hm = 540, 360
+    x = int((xcenter * wm) / 1000 * width)
+    y = int((ycenter * hm) / 1000 * height)
 
-frame_past = None
-frame_now = None
+    return x, y
 
 while True :
+    #frame取得
     ret , frame = cap.read()
-    #GaussianFilter　
-    filter = cv2.GaussianBlur(frame, (5, 5), 0)    
-    #Grayscale変換
-    gray = cv2.cvtColor(filter[ymin:ymax, xmin:xmax], cv2.COLOR_RGB2GRAY)
-    ret2, bin = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU)
-    fgmask = fgbg.apply(frame[ymin:ymax, xmin:xmax])
-    fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
-    "最小外接円"
-    contours, hierarchy = cv2.findContours(fgmask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(xmin, ymin))
-    # contours = list(filter(lambda x : cv2.contourArea(x) > 100, contours))
-    for i, cnt in enumerate(contours):
-        cv2.drawContours(frame, contours, -1, (255, 0, 0), 2)
-    cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
 
-    cv2.imshow('output', frame)
-    cv2.imshow('fgmask', fgmask)
+    #GaussianFilter　平滑化
+    filter = cv2.GaussianBlur(frame, (5, 5), 1)    
+
+    #Grayscale変換
+    gray = cv2.cvtColor(filter[ymin:ymax, xmin:xmax], cv2.COLOR_RGB2GRAY)  #trimmnig
+    # gray = cv2.cvtColor(filter, cv2.COLOR_RGB2GRAY)
+
+    "最小外接円"    
+    #Canny法　edge検出
+    edges = cv2.Canny(gray, 220, 330)  #C1-205では220 , 330
+    # edgeを膨張させる(Dilation)  morphology変換
+    # edges = cv2.dilate(edges, kernel=np.ones((5, 5), np.uint8))
+    contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(xmin, ymin))
+    for i, cnt in enumerate(contours) :
+        center, radius = cv2.minEnclosingCircle(cnt)
+        if radius < 17 and radius > 10:
+            draw(frame, (center[0], center[1]), radius)
+            intarray = np.asarray(center, dtype = int)
+            x, y = getpoint(intarray[0], intarray[1])
+            print(( x , y ))
+            
+            # PC⇔Arduino
+            # d = str(x) + ':' + str(y) + ';'
+            # ser = serial.Serial()
+            # ser.port = "COM4"     #デバイスマネージャでArduinoのポート確認
+            # ser.baudrate = 9600   #Arduinoと合わせる
+            # ser.setDTR(False)     #DTRを常にLOWにしReset阻止
+            # ser.open()            #COMポートを開く
+            # ser.write(bytes(d, 'utf-8'))          #送りたい内容をバイト列で送信
+            # ser.close()           #COMポートを閉じる
+        break
+    cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
     
+    
+    cv2.imshow('output', frame)
+    cv2.imshow('gray', gray)
+    cv2.imshow('edges', edges)
+    
+    
+    
+    
+
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 

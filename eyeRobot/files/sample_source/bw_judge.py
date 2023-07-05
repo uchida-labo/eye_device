@@ -2,13 +2,14 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import serial
+import matplotlib.pyplot as plt
 
 # Trimming area
-xmin, xmax = 240, 320  #100 , 500
+xmin, xmax = 220, 420  #100 , 500
 ymin, ymax = 180, 240  #100 , 300
 
 # Setting of USB camera
-cap = cv2.VideoCapture(0+cv2.CAP_DSHOW)  # 0+cv2.CAP_DSHOW
+cap = cv2.VideoCapture(0)  # 0+cv2.CAP_DSHOW
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 cap.set(cv2.CAP_PROP_FPS, 15) # カメラFPS設定
 width = cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540) # カメラ画像の横幅設定  1280pxel
@@ -64,6 +65,17 @@ def getpoint(xcenter, ycenter):
 
     return x, y
 
+def judge(frame, x, y, width, height):
+    imagesize = width * height
+    trim_frame = cv2.cvtColor(frame[y:y+height, x:x+width], cv2.COLOR_RGB2GRAY)
+    ret_a, trim = cv2.threshold(trim_frame, 65, 255, cv2.THRESH_BINARY)
+    white = cv2.countNonZero(trim)
+    black = imagesize - white
+    white_ratio = (white/imagesize) * 100
+    black_ratio = (black/imagesize) * 100
+
+    return white_ratio, black_ratio
+
 while True :
     #frame取得
     ret , frame = cap.read()
@@ -74,42 +86,33 @@ while True :
     #Grayscale変換
     gray = cv2.cvtColor(filter[ymin:ymax, xmin:xmax], cv2.COLOR_RGB2GRAY)  #trimmnig
     # gray = cv2.cvtColor(filter, cv2.COLOR_RGB2GRAY)
-
+    ret2, bin = cv2.threshold(gray, 55, 255, cv2.THRESH_BINARY)
     "最小外接円"    
     #Canny法　edge検出
-    edges = cv2.Canny(gray, 50, 100)  #C1-205では220 , 330
+    edges = cv2.Canny(gray, 100, 170)  #C1-205では220 , 330
     # edgeを膨張させる(Dilation)  morphology変換
     # edges = cv2.dilate(edges, kernel=np.ones((5, 5), np.uint8))
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(xmin, ymin))
     for i, cnt in enumerate(contours) :
         center, radius = cv2.minEnclosingCircle(cnt)
-        if radius < 17 and radius > 10:
-            draw(frame, (center[0], center[1]), radius)
-            intarray = np.asarray(center, dtype = int)
-            x, y = getpoint(intarray[0], intarray[1])
-            print(( x , y ))
-            
-            # PC⇔Arduino
-            d = str(x) + ':' + str(y) + ';'
-            ser = serial.Serial()
-            ser.port = "COM4"     #デバイスマネージャでArduinoのポート確認
-            ser.baudrate = 9600   #Arduinoと合わせる
-            ser.setDTR(False)     #DTRを常にLOWにしReset阻止
-            ser.open()            #COMポートを開く
-            ser.write(bytes(d, 'utf-8'))          #送りたい内容をバイト列で送信
-            ser.close()           #COMポートを閉じる
+        x, y, w, h = cv2.boundingRect(cnt)
+        white_ratio, black_ratio = judge(frame, x, y, w, h)
+        if white_ratio < 30 and black_ratio > 70:
+            if radius < 17 and radius > 10:
+                cv2.rectangle(frame, (x, y), ((x+w), (y+h)), (255, 255, 0), 4)
+                # draw(frame, (center[0], center[1]), radius)
+                intarray = np.asarray(center, dtype = int)
+                x, y = getpoint(intarray[0], intarray[1])
+                print('( x , y ) = ', x , y )
+                print('White Area [%] :', white_ratio)
+                print('Black Area [%] :', black_ratio)
+
         break
     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
     
-    
     cv2.imshow('output', frame)
-    cv2.imshow('gray', gray)
-    cv2.imshow('edges', edges)
-    
-    
-    
-    
-
+    cv2.imshow('edge', edges)
+    cv2.imshow('bin', bin)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 

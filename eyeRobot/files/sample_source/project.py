@@ -13,8 +13,8 @@ def draw(video, point, radius):
 # Function of getting center point that be detected circle
 def getpoint(xcenter, ycenter):
     wm, hm = 540, 360
-    x = int((xcenter * wm) / 1000 * width)
-    y = int((ycenter * hm) / 1000 * height)
+    x = int((xcenter * wm) / 1000 * wm)
+    y = int((ycenter * hm) / 1000 * hm)
 
     return x, y
 
@@ -41,11 +41,17 @@ def excel_data(x, y, val):
 
 
 # camera settings
-cap = cv2.VideoCapture(0+cv2.CAP_DSHOW) # mac:2  USB camera:0+cv2.CAP_DSHOW
+cap = cv2.VideoCapture(0) # mac:2  USB camera:0+cv2.CAP_DSHOW
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 cap.set(cv2.CAP_PROP_FPS, 15) # FPS setting
-width = cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540) # width setting  1280pxel
-height = cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) # height setting  720pxel
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540) # width setting  1280pxel
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) # height setting  720pxel
+
+fps = int(cap.get(cv2.CAP_PROP_FPS))
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+video = cv2.VideoWriter('video.mp4', fourcc, fps, (width, height))
 
 # trimming size setting
 xmin, xmax = 240, 400
@@ -111,8 +117,7 @@ while True:
                 ws.cell(row=n, column=2, value=val)
                 ws.cell(row=n, column=3, value=x)
                 ws.cell(row=n, column=4, value=y)
-                ws.cell(row=n, column=5, value=white_ratio)
-                ws.cell(row=n, column=5, value=black_ratio)
+                ws.cell(row=n, column=5, value=radius)
                 # ws.cell(row=n, column=5, value=threshold_value)
                 wb.save('.xlsx')
                 wb.close()
@@ -125,6 +130,9 @@ while True:
 
         break
 
+    if val == 51:
+        break
+
     # rectangle drawing process
     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
     
@@ -133,10 +141,12 @@ while True:
     cv2.imshow('edge', edges)
     cv2.imshow('bin', bin)
 
+    video.write(frame)
     # Break by pressing "q" key
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # freeing shooting objects and windows
+video.release()
 cap.release()
 cv2.destroyAllWindows()
