@@ -1,12 +1,12 @@
 import cv2
 
-face_cascade_path = R"C:\\Users\\mkouk\\anaconda3\\envs\\py\\Lib\\site-packages\\cv2\\data\\haarcascade_frontalface_default.xml"
-eye_cascade_path = R"C:\\Users\\mkouk\\anaconda3\\envs\\py\\Lib\\site-packages\\cv2\\data\\haarcascade_eye.xml"
+face_cascade_path = R"C:\\Users\\uchidalab\\anaconda3\\envs\\py38\\Lib\\site-packages\\cv2\\data\\haarcascade_frontalface_default.xml"
+eye_cascade_path = R"C:\\Users\\uchidalab\\anaconda3\\envs\\py38\\Lib\\site-packages\\cv2\\data\\haarcascade_eye.xml"
 
 face_cascade = cv2.CascadeClassifier(face_cascade_path)
 eye_cascade = cv2.CascadeClassifier(eye_cascade_path)
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 while True:
     ret, img = cap.read()
