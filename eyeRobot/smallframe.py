@@ -2,15 +2,22 @@ import cv2
 
 cap1 = cv2.VideoCapture(0+cv2.CAP_DSHOW)
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-video = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\experiments.mp4', fourcc, 15, (70, 60))
+video = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\sample.mp4', fourcc, 15, (70, 60))
+
+fps = int(cap1.get(cv2.CAP_PROP_FPS))
+width = int(cap1.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap1.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 xs, xl = 270, 380
 ys, yl = 110, 200
+print('WIDTH:', width)
+print("HEIGHT:", height)
+print("FPS", fps)
 
 while True:
     # ret, frame = cap.read()
     ret1, frame1 = cap1.read()
-    frame1 = frame1[ys:yl, xs:xl]
+    # frame1 = frame1[ys:yl, xs:xl]
 
     cv2.imshow("save frame", frame1)
 

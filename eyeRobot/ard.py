@@ -18,11 +18,10 @@ cap = cv2.VideoCapture(1)
 savevideo = cv2.VideoCapture(0+cv2.CAP_DSHOW)
 
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-cap.set(cv2.CAP_PROP_FPS, 20) 
 width = cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540) 
 height = cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) 
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-video = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\experiments.mp4', fourcc, 15, (70, 60))
+video = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\experiments.mp4', fourcc, 15, (640, 480))
 
 
 kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]], np.float32)
@@ -89,7 +88,7 @@ while True :
     #frame取得
     ret , frame = cap.read()
     ret1, frame1 = savevideo.read()
-    frame1 = frame1[ys:yl, xs:xl]
+    # frame1 = frame1[ys:yl, xs:xl]
     rgbf = frame    #追記しました
 
     frame = cv2.filter2D(frame, -1, kernel)
@@ -103,7 +102,7 @@ while True :
 
     "最小外接円"    
     #Canny法　edge検出
-    edges = cv2.Canny(gray, 100, 250)  #C1-205では220 , 330
+    edges = cv2.Canny(gray, 120, 240)  #C1-205では220 , 330
     # edgeを膨張させる(Dilaion)  morphology変換
     # edges = cv2.dilate(edges, kernel=np.ones((5, 5), np.uint8))
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(xmin, ymin))
