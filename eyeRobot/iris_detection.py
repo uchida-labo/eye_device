@@ -4,18 +4,13 @@ from functions import image_processing, data_acquisition, judge_area
 fontType = cv2.FONT_HERSHEY_COMPLEX
 
 # Trimming area
-xmin, xmax = 220, 420  #100 , 500
-ymin, ymax = 180, 240  #100 , 300
+xmin, xmax = 252, 335  #100 , 500
+ymin, ymax = 250, 435  #100 , 300
 w_meter = 100
 h_meter = 100
 
 # Setting of USB camera
-cap = cv2.VideoCapture(0)  # 0+cv2.CAP_DSHOW
-cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-cap.set(cv2.CAP_PROP_FPS, 15) # カメラFPS設定
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540) # カメラ画像の横幅設定  1280pxel
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) # カメラ画像の縦幅設定  720pxel
-
+cap = cv2.VideoCapture(1)  # 0+cv2.CAP_DSHOW
 fps, width, height = judge_area.video_parameter(cap)
 
 while True :
