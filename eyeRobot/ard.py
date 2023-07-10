@@ -11,18 +11,19 @@ from statistics import mode
 xmin, xmax = 252, 335  #100 , 500
 ymin, ymax = 250, 435  #100 , 300
 
+xs, xl = 270, 380
+ys, yl = 110, 200
 
-cap = cv2.VideoCapture(0+cv2.CAP_DSHOW)  # 0+cv2.CAP_DSHOW
+cap = cv2.VideoCapture(1)
+savevideo = cv2.VideoCapture(0+cv2.CAP_DSHOW)
 
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-# カメラFPS設定
 cap.set(cv2.CAP_PROP_FPS, 20) 
-
-# カメラ画像の横幅設定  1280pxel
 width = cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540) 
-
-# カメラ画像の縦幅設定  720pxel
 height = cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) 
+fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+video = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\experiments.mp4', fourcc, 15, (70, 60))
+
 
 kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]], np.float32)
 
@@ -87,6 +88,8 @@ def judge(frame, x, y, width, height):
 while True :
     #frame取得
     ret , frame = cap.read()
+    ret1, frame1 = savevideo.read()
+    frame1 = frame1[ys:yl, xs:xl]
     rgbf = frame    #追記しました
 
     frame = cv2.filter2D(frame, -1, kernel)
@@ -100,14 +103,14 @@ while True :
 
     "最小外接円"    
     #Canny法　edge検出
-    edges = cv2.Canny(gray, 170, 240)  #C1-205では220 , 330
+    edges = cv2.Canny(gray, 100, 250)  #C1-205では220 , 330
     # edgeを膨張させる(Dilaion)  morphology変換
     # edges = cv2.dilate(edges, kernel=np.ones((5, 5), np.uint8))
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(xmin, ymin))
     for i, cnt in enumerate(contours):
         center, radius = cv2.minEnclosingCircle(cnt)
-        x, y, w, h = cv2.boundingRect(cnt)
-        white_ratio, black_ratio = judge(frame, x, y, w, h)
+        xp, yp, w, h = cv2.boundingRect(cnt)
+        white_ratio, black_ratio = judge(frame, xp, yp, w, h)
         if white_ratio < 30 and black_ratio > 70:
             if radius < 25 and radius > 15:
                 draw(frame, (center[0], center[1]), radius)
@@ -159,11 +162,15 @@ while True :
     
     
     cv2.imshow('output', frame)
-    cv2.imshow('edges', edges)
+    # cv2.imshow('save frame', frame1)
+    cv2.imshow("edge", edges)
+    video.write(frame1)
    
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # 撮影用オブジェクトとウィンドウの解放
 cap.release()
+savevideo.release()
+video.release()
 cv2.destroyAllWindows()
