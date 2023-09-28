@@ -30,19 +30,26 @@ while True :
         x = int(center[0])
         y = int(center[1])
         r = int(radius)
+        ymin_c = y - r
+        ymax_c = y + r
+        xmin_c = x - r
+        xmax_c = x + r
         image_size = 4 * (r ** 2)
-        trim_gray = cv2.cvtColor(frame[(y-r):(y+r), (x-r):(x+r)], cv2.COLOR_RGB2GRAY)
-        trim_bin = cv2.threshold(trim_gray, 55, 255, cv2.THRESH_BINARY)[1]
+
+        if image_size == 0:
+             break
+        
+        trim_bin = cv2.threshold(gray_img[ymin_c:ymax_c, xmin_c:xmax_c], 55, 255, cv2.THRESH_BINARY)[1]
         white = cv2.countNonZero(trim_bin)
         black = image_size - white
         white_ratio = (white/image_size) * 100
         black_ratio = (black/image_size) * 100
         if white_ratio < 30 and black_ratio > 70:
             if radius < 20 and radius > 14:
-                    cv2.circle(frame, center, r, (100, 255, 0), 2)
-                    cv2.circle(frame, center, 2, (0, 0, 255), 3)
-                    cx = (w_meter * center[0])/w
-                    cy = (h_meter * center[1])/h
+                    cv2.circle(frame, (x, y), r, (100, 255, 0), 2)
+                    cv2.circle(frame, (x, y), 2, (0, 0, 255), 3)
+                    cx = (w_meter * x)/w
+                    cy = (h_meter * y)/h
         break
 
     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
@@ -51,6 +58,5 @@ while True :
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release()
-cv2.destroyAllWindows()
+
 
