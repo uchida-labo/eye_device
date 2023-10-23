@@ -22,7 +22,7 @@ while True :
     
     fil = cv2.GaussianBlur(frame, (5, 5), 1)
     gray_img = cv2.cvtColor(fil[ymin:ymax, xmin:xmax], cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(gray_img, 100, 170,)   # Set upper and lower thresholds
+    edges = cv2.Canny(gray_img, 100, 170)   # Set upper and lower thresholds
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset = (xmin, ymin))
 
     for i, cnt in enumerate(contours):
