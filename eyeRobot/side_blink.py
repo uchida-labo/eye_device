@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 cap1 = cv2.VideoCapture(0) # mac:2  USB camera:0+cv2.CAP_DSHOW
 cap1.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 cap1.set(cv2.CAP_PROP_FPS, 30) # FPS setting
-cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 540) # width setting  1280pxel
+cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 640) # width setting  1280pxel
 cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) # height setting  720pxel
 
 # trimming size setting
-xmin, xmax = 220,600
-ymin, ymax = 0, 300
+xmin, xmax = 240,600
+ymin, ymax = 50, 350
 
 # excel sheet setting
 # sheetname = 'Normal'   # ← Editing section
@@ -81,18 +81,20 @@ while True:
             val += 1
             blink_time = time.time()
             detection_time = blink_time - base_time
-            cv2.putText(frame, 'Blink!', (300, 280), fontType, 1, (0, 0, 255), 3)
+            cv2.putText(frame, 'Blink!', (190, 380), fontType, 1, (0, 0, 255), 3)
             blink_list.append(val)
             detectime_list.append(detection_time)
             detecwhite_list.append(white_ratio)
 
-    cv2.putText(frame, str(val), (240, 280), fontType, 1, (0, 0, 255), 3)
+    cv2.putText(frame, str(val), (190, 330), fontType, 1, (0, 0, 255), 3)
     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
 
     cv2.imshow("Frame", frame)
     cv2.imshow("Bin", thresh)
 
-    print('white[%]', white_ratio)
+    # print('white[%]', white_ratio)
+    print('width:', width)
+    print('height:', height)
     
     end_time = time.time()
     run_time = end_time - base_time
