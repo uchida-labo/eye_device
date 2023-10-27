@@ -35,12 +35,14 @@ def draw_histogram(hist):
     plt.legend(loc=2)
     plt.show()
 
-img = cv2.imread(R"C:\Users\admin\Desktop\white_remove_data\side.jpg",cv2.IMREAD_UNCHANGED)
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-cv2.imshow("Image", gray)
-cv2.imwrite(R"C:\Users\admin\Desktop\white_remove_data\side_gray.jpg", gray)
+img = cv2.imread(R"C:\Users\admin\Desktop\white_remove_data\side_30to70.jpg",cv2.IMREAD_UNCHANGED)
+# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+reverse = cv2.bitwise_not(img)
+cv2.imshow("Image", img)
+cv2.imshow('reverse', reverse)
+cv2.imwrite(R"C:\Users\admin\Desktop\white_remove_data\side_reverse.jpg", reverse)
 
 plt.rcParams["font.size"] = 15
 plt.rcParams["figure.figsize"] = (8, 6)
-hist = get_histogram(gray)
+hist = get_histogram(reverse)
 draw_histogram(hist)
