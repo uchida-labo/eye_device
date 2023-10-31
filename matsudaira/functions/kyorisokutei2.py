@@ -25,13 +25,13 @@ while True :
     
     fil = cv2.GaussianBlur(frame, (5, 5), 1)
     gray_img = cv2.cvtColor(fil[ymin:ymax, xmin:xmax], cv2.COLOR_BGR2GRAY)
-    #ret, img_thresh = cv2.threshold(gray_img, threshold, 255, cv2.THRESH_BINARY) #オブジェクトimg_blurを閾値threshold = 100で二値化しimg_binaryに代入
-    edges = cv2.Canny(gray_img, 100, 170)   # Set upper and lower thresholds 100, 170
+    ret, img_thresh = cv2.threshold(gray_img, 125, 255, cv2.THRESH_BINARY) #オブジェクトimg_blurを閾値threshold = 100で二値化しimg_binaryに代入
+    edges = cv2.Canny(img_thresh, 100, 170)   # Set upper and lower thresholds 100, 170
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset = (xmin, ymin))
 
 
-    cv2.imshow("rinkaku", edges)
-    #cv2.imshow("2値化画像", img_thresh)
+    #cv2.imshow("rinkaku", edges)
+    cv2.imshow("2値化画像", img_thresh)
     #cv2.drawContours(edge)
     
     for i, cnt in enumerate(contours):
