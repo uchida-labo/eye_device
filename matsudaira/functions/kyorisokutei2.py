@@ -25,7 +25,7 @@ while True :
     
     fil = cv2.GaussianBlur(frame, (5, 5), 1)
     gray_img = cv2.cvtColor(fil[ymin:ymax, xmin:xmax], cv2.COLOR_BGR2GRAY)
-    ret, img_thresh = cv2.threshold(gray_img, 125, 255, cv2.THRESH_BINARY) #オブジェクトimg_blurを閾値threshold = 100で二値化しimg_binaryに代入
+    ret, img_thresh = cv2.threshold(gray_img, 80, 255, cv2.THRESH_BINARY) #オブジェクトimg_blurを閾値threshold = 100で二値化しimg_binaryに代入
     edges = cv2.Canny(img_thresh, 100, 170)   # Set upper and lower thresholds 100, 170
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset = (xmin, ymin))
 
@@ -46,11 +46,7 @@ while True :
             # print(ellipse)
             # print(ellipse[0][0])
 
-            cx = (ellipse[0][0])
-            cy = (ellipse[0][1])
             
-            cx = int(cx)
-            cy = int(cy)
             ellipseW = (ellipse[1][0])
             ellipseH = (ellipse[1][1])
             angle = ellipse[2]
@@ -62,6 +58,11 @@ while True :
                 if ellipseH >= 20 and ellipseH <= 40:
                     if (angle >= 0 and angle <=10) or (angle >= 350 and angle <=360): 
                 # 楕円描画
+                        cx = (ellipse[0][0])
+                        cy = (ellipse[0][1])
+                        cx = int(cx)
+                        cy = int(cy)
+
                         frame = cv2.ellipse(frame,ellipse,(255,0,0),2)
                         cv2.drawMarker(frame, (cx,cy), (0,0,255), markerType=cv2.MARKER_CROSS, markerSize=10, thickness=1)
                          #cv2.putText(resimg, str(i+1), (cx+3,cy+3), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,80,255), 1,cv2.LINE_AA)
