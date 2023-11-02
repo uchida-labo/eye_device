@@ -8,7 +8,7 @@ import time
 from statistics import mode
 
 # Trimming area
-xmin, xmax = 252, 335  #100 , 500
+xmin, xmax = 320, 403  #100 , 500
 ymin, ymax = 250, 435  #100 , 300
 
 xs, xl = 270, 380
@@ -102,7 +102,7 @@ while True :
 
     "最小外接円"    
     #Canny法　edge検出
-    edges = cv2.Canny(gray, 120, 240)  #C1-205では220 , 330
+    edges = cv2.Canny(gray, 170, 240)  #C1-205では220 , 330
     # edgeを膨張させる(Dilaion)  morphology変換
     # edges = cv2.dilate(edges, kernel=np.ones((5, 5), np.uint8))
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(xmin, ymin))
