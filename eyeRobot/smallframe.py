@@ -1,6 +1,6 @@
 import cv2
 
-cap1 = cv2.VideoCapture(0+cv2.CAP_DSHOW)
+cap1 = cv2.VideoCapture(1)
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 video = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\sample.mp4', fourcc, 15, (70, 60))
 
