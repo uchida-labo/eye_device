@@ -17,17 +17,21 @@ while True:
 
     gaussian = cv2.GaussianBlur(frame, (5, 5), 1)
     gray = cv2.cvtColor(gaussian[ymin:ymax, xmin:xmax], cv2.COLOR_BGR2GRAY)
+
     low_bound = 30
     high_bound = 70
     mask = cv2.inRange(gray, low_bound, high_bound)
     pickupimg = cv2.bitwise_and(gray, gray, mask = mask)
-    # pick_reverse = cv2.bitwise_not(pickupimg)
-    bin_pickup = cv2.threshold(pickupimg, 70, 255, cv2.THRESH_BINARY)[1]
+    pick_reverse = cv2.bitwise_not(pickupimg)
+    bin_pickup = cv2.threshold(pickupimg, 00, 255, cv2.THRESH_BINARY_INV)[1]
+    bin_reverse = cv2.threshold(pick_reverse, 254, 255, cv2.THRESH_BINARY)[1]
+
     bin = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)[1]
     # bin_reverse = cv2.bitwise_not(bin)
     # binary = cv2.inRange(gray, 17, 18)
     # binary = cv2.bitwise_not(binary)
     edges = cv2.Canny(gray, 0, 130)
+
     edges_pickup = cv2.Canny(bin_pickup, 0, 130)
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset = (xmin, ymin))
     
@@ -40,14 +44,15 @@ while True:
 
     cv2.imshow('Frame', frame)
     # cv2.imshow('Binary_inrange', binary)
-    cv2.imshow('Binary', bin)
+    # cv2.imshow('Binary', bin)
     # cv2.imshow('Pick up image', pickupimg)
-    # cv2.imshow('binary of pickup image', bin_pickup)
+    cv2.imshow('binary of pickup image', bin_pickup)
     # cv2.imshow('reverse', pick_reverse)
-    # cv2.imshow('Edges', edges)
+    cv2.imshow('Edges', edges)
     # cv2.imshow('Contours', cntframe)
-    # cv2.imshow('edges of pick up image', edges_pickup)
+    cv2.imshow('edges of pick up image', edges_pickup)
     # print(area)
+    # cv2.imshow('Binary reverse', bin_reverse)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

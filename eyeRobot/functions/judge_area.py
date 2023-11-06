@@ -34,7 +34,7 @@ def judge_eye(frame, center, radius):
 
 def judge_blink(trim_frame, xmin, xmax, ymin, ymax):
     """
-    Black-White area decision per measurement area　for blink detection
+    Black-White area decision per measurement area for blink detection
 
     ・argument
     'trim_frame':Binarized cropping camera image
