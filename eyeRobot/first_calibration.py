@@ -1,4 +1,5 @@
 import cv2, time, statistics
+import numpy as np
 
 def judge(trim_frame, xmin, xmax, ymin, ymax):
     video_size = ( xmax - xmin ) * ( ymax - ymin )
@@ -8,8 +9,6 @@ def judge(trim_frame, xmin, xmax, ymin, ymax):
     black_blink = ( black / video_size ) * 100
 
     return white_blink, black_blink
-
-
 
 capture = cv2.VideoCapture(0)
 capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
@@ -26,6 +25,14 @@ x_list = []
 y_list = []
 w_list = []
 h_list = []
+
+kernel_hor = np.array([
+    [1, 2, 1], 
+    [0, 0, 0], 
+    [-1, -2, -1]], dtype = np.float32)
+kernel_hor /= 9
+
+kernel = np.ones((3, 3), np.uint8)
 
 while True:
     ret, frame_cal = capture.read()
