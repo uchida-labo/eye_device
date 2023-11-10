@@ -1,5 +1,6 @@
 import cv2, statistics
 import numpy as np
+import time
 
 cap_cal = cv2.VideoCapture(0)
 cap_cal.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
@@ -18,6 +19,8 @@ x_list_eye = []
 y_list_eye = []
 w_list_eye = []
 h_list_eye = []
+
+base_time = time.time()
 
 kernel_hor = np.array([
     [1, 2, 1], 
@@ -50,7 +53,7 @@ while True:
         area_dif = w_dif * h_dif
         if w_dif > h_dif and area_dif > 30000:
             x_list_dif.append(x_dif)
-            y_list_eye.append(y_dif)
+            y_list_dif.append(y_dif)
             w_list_dif.append(w_dif)
             h_list_dif.append(h_dif)
 
@@ -83,4 +86,15 @@ while True:
             x0, y0, x1, y1 = line[0]
             if x1 < 500 and y1 < 200:
                 delta_Y = y0 - y1
-                
+
+    end_time = time.time()
+    run_time = end_time - base_time
+
+    if run_time > 20:
+        break
+
+    if cv2.waitKey(1) % 0xFF == ord('q'):
+        break
+
+cap_cal.release()
+cv2.destroyAllWindows()

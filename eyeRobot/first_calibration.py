@@ -83,10 +83,10 @@ while True:
 
 
     cv2.imshow('Frame', frame_cal)
-    # cv2.imshow('Frame difference', binary_dif)
+    cv2.imshow('Frame difference', binary_dif)
     # cv2.imshow('Mask image reverse', reverse_msk)
-    cv2.imshow('Edges', edges_rect)
-    cv2.imshow('Edges frame difference', edges_diff)
+    # cv2.imshow('Edges', edges_rect)
+    # cv2.imshow('Edges frame difference', edges_diff)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
