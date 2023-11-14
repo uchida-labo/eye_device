@@ -1,4 +1,4 @@
-import cv2, time, statistics
+import cv2, statistics
 import numpy as np
 
 cap_cal = cv2.VideoCapture(0)
@@ -6,8 +6,6 @@ cap_cal.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 cap_cal.set(cv2.CAP_PROP_FPS, 30)
 cap_cal.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap_cal.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
-
-avg_dif = None
 
 x_list_dif = []
 y_list_dif = []
@@ -19,7 +17,7 @@ y_list_eye = []
 w_list_eye = []
 h_list_eye = []
 
-base_time = time.time()
+delta_list = []
 
 kernel_hor = np.array([
     [1, 2, 1], 
@@ -80,18 +78,6 @@ def matrix_append_msk(x, y, w, h):
     w_list_eye.append(w)
     h_list_eye.append(h)
 
-
-# def recatngle_average(xlist_type, ylist_type, wlist_type, hlist_tye):
-#     ave_x = statistics.mean(xlist_type)
-#     ave_y = statistics.mean(ylist_type)
-#     ave_w = statistics.mean(wlist_type)
-#     ave_h = statistics.mean(hlist_tye)
-
-#     xmin_cal = int(ave_x -20)
-#     xmax_cal = int(ave_x + ave_w + 20)
-#     ymin_cal = int(ave_y - 20)
-#     ymax_cal = int(ave_y + ave_h + 20)
-
 def Frame_difference(gray_frame, avg_frame):
     """
     フレーム間差分を計算して瞼の移動領域に外接する矩形を検出
@@ -147,36 +133,71 @@ def Eyelids_line(gray_frame):
             x0, y0, x1, y1 = line[0]
             if x1 < 500 and y1 < 200:
                 delta_Y = y0 - y1
+                delta_list.append(delta_Y)
 
-def Run_time():
-    """
-    時間計測
+def recatngle_average():
 
-    ・戻り値
-    'run_time'：プログラム走査時間
-    """
-    end_time = time.time()
-    run_time = end_time - base_time
+    ave_x0_dif = statistics.mean(x_list_dif)
+    ave_y0_dif = statistics.mean(y_list_dif)
+    ave_w_dif = statistics.mean(w_list_dif)
+    ave_h_dif = statistics.mean(h_list_dif)
 
-    return run_time
+    ave_x0_eye = statistics.mean(x_list_eye)
+    ave_y0_eye = statistics.mean(y_list_eye)
+    ave_w_eye = statistics.mean(w_list_eye)
+    ave_h_eye = statistics.mean(h_list_eye)
+
+    if ave_x0_dif > ave_x0_eye:
+        xmin_cal = int(ave_x0_eye - 20)
+    else:
+        xmin_cal = int(ave_x0_dif - 20)
+    
+    if ave_y0_dif > ave_y0_eye:
+        ymin_cal = int(ave_y0_eye - 20)
+    else:
+        ymin_cal = int(ave_y0_dif - 20)
+
+    if ave_w_dif > ave_w_eye:
+        xmax_cal = int(xmin_cal + ave_w_dif + 40)
+    else:
+        xmax_cal = int(xmin_cal + ave_w_eye + 40)
+    
+    if ave_h_dif > ave_h_eye:
+        ymax_cal = int(ymin_cal + ave_h_dif + 40)
+    else:
+        ymax_cal = int(ymin_cal + ave_h_eye + 40)
+
+    return xmin_cal, xmax_cal, ymin_cal, ymax_cal
+
+def Gradients_eyelids():
+    max_gradient = max(delta_list)
+    min_gradient = min(delta_list)
 
 def main():
     """
     メイン関数
     """
+    avg_dif = None
+
     while True:
         ret, frame_cal = cap_cal.read()
         if not ret:
             break
 
         gray_cal = grayscale_convert(frame = frame_cal)
+
+        if avg_dif is None:
+            avg_dif = gray_cal.copy().astype("float")
+
         Frame_difference(gray_frame = gray_cal, avg_frame = avg_dif)
         Mask_process(gray_frame = gray_cal)
-        Eyelids_line(gray_frame = gray_cal)
-        run_time = Run_time()
-
-        if run_time > 20:
-            break
+        # Eyelids_line(gray_frame = gray_cal)
+        xmin_cal, xmax_cal, ymin_cal, ymax_cal = recatngle_average()
+        print('xmin:', xmin_cal)
+        print('xmax:', xmax_cal)
+        print('ymin:', ymin_cal)
+        print('ymax:', ymax_cal)
+        cv2.rectangle(frame_cal, (xmin_cal, ymin_cal), (xmax_cal, ymax_cal), (255, 255, 0), 3)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -186,3 +207,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
