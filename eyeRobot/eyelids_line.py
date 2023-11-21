@@ -68,6 +68,7 @@ while True:
     cv2.imshow('filter', horizon_line)
     cv2.imshow('Dilation', dilation_line)
     cv2.imshow('Closing', closing_line)
+    
     cv2.imshow('Opening', opening_line)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):

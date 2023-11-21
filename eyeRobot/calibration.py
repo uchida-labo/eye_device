@@ -19,6 +19,12 @@ video_bin_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_
 video_edge_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\Capture_edgemsk.avi', fourcc_capcal, 30, (640, 360))
 video_pick_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\Capture_pick_msk.avi', fourcc_capcal, 30, (640, 360))
 
+video_bin_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\Capture_bin_line.avi', fourcc_capcal, 30, (640, 360))
+video_hor_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\Capture_hor_line.avi', fourcc_capcal, 30, (640, 360))
+video_dil_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\Capture_dil_line.avi', fourcc_capcal, 30, (640, 360))
+video_cls_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\Capture_cls_line.avi', fourcc_capcal, 30, (640, 360))
+video_opn_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\Capture_opn_line.avi', fourcc_capcal, 30, (640, 360))
+
 x_list_dif, y_list_dif, w_list_dif, h_list_dif = [], [], [], []
 x_list_eye, y_list_eye, w_list_eye, h_list_eye = [], [], [], []
 delta_list = []
@@ -97,9 +103,12 @@ def calibration(avg_dif):
         if lines is not None:
             for line in lines:
                 x0, y0, x1, y1 = line[0]
-                if x1 < 500 and y1 < 200:
+                if x0 < 500 and y0 < 200:
                     delta_Y = y1 - y0
-                    delta_list.append(delta_Y)
+                    delta_X = x1 - x0
+                    Gradient = 10 * (delta_Y / delta_X)
+                    if Gradient < 5 and Gradient > 0:
+                        delta_list.append(Gradient)
 
         cv2.imshow('Frame', frame_cal)
 
@@ -112,10 +121,15 @@ def calibration(avg_dif):
         video_capcal.write(frame_cal)
         video_bin_dif.write(cv2.cvtColor(bin_dif, cv2.COLOR_GRAY2BGR))
         video_edge_dif.write(cv2.cvtColor(edges_dif, cv2.COLOR_GRAY2BGR))
+        video_deltadif.write(cv2.cvtColor(delta_dif, cv2.COLOR_GRAY2BGR))
         video_bin_msk.write(cv2.cvtColor(bin_msk, cv2.COLOR_GRAY2BGR))
         video_edge_msk.write(cv2.cvtColor(edges_msk, cv2.COLOR_GRAY2BGR))
         video_pick_msk.write(cv2.cvtColor(pick_msk, cv2.COLOR_GRAY2BGR))
-        video_deltadif.write(cv2.cvtColor(delta_dif, cv2.COLOR_GRAY2BGR))
+        video_bin_line.write(cv2.cvtColor(bin_line, cv2.COLOR_GRAY2BGR))
+        video_hor_line.write(cv2.cvtColor(horizon_line, cv2.COLOR_GRAY2BGR))
+        video_dil_line.write(cv2.cvtColor(dilation_line, cv2.COLOR_GRAY2BGR))
+        video_cls_line.write(cv2.cvtColor(closing_line, cv2.COLOR_GRAY2BGR))
+        video_opn_line.write(cv2.cvtColor(opening_line, cv2.COLOR_GRAY2BGR))
 
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -124,11 +138,17 @@ def calibration(avg_dif):
     cap_cal.release()
     video_capcal.release()
     video_bin_dif.release()
-    video_bin_msk.release()
+    video_deltadif.release()
     video_edge_dif.release()
+    video_bin_msk.release()
     video_edge_msk.release()
     video_pick_msk.release()
-    video_deltadif.release()
+    video_bin_line.release()
+    video_hor_line.release()
+    video_dil_line.release()
+    video_cls_line.release()
+    video_opn_line.release()
+    
     cv2.destroyAllWindows()
 
 def average_value(xdif, ydif, wdif, hdif, xmsk, ymsk, wmsk, hmsk):
@@ -195,8 +215,8 @@ def Excel_write_calibration(x_list_dif, y_list_dif, w_list_dif, h_list_dif,
     ws["N3"].value = 'delta Y'
     ws["O3"].value = 'delta Y(descending)'
 
-    ws["Q3"].value = 'minimum gradient'
-    ws["R3"].value = 'maximum gradient'
+    ws["Q3"].value = 'maximum gradient'
+    ws["R3"].value = 'minimum gradient'
 
     ws["T3"].value = 'White ratio'
     ws["U3"].value = 'White ratio(descending)'
@@ -213,9 +233,9 @@ def Excel_write_calibration(x_list_dif, y_list_dif, w_list_dif, h_list_dif,
         ws.cell(i2 + 4, 11, value = w_list_eye[i2])
         ws.cell(i2 + 4, 12, value = h_list_eye[i2])
 
-    for i3 in range(0, len(new_delta_list)):
-        ws.cell(i3 + 4, 14, value = delta_list[i3])
-        ws.cell(i3 + 4, 15, value = new_delta_list[i3])
+    for i4 in range(0, len(new_delta_list)):
+        ws.cell(i4 + 4, 14, value = delta_list[i4])
+        ws.cell(i4 + 4, 15, value = new_delta_list[i4])
     
     ws.cell(4, 17, value = new_delta_list[0])
     ws.cell(4, 18, value = new_delta_list[(len(new_delta_list) - 1)])
@@ -285,33 +305,50 @@ def Blink_calibration(avg_blink, xmin, xmax, ymin, ymax):
     video_blink_cut.release()
     cv2.destroyAllWindows()
 
-def Detection_data_excel(grad_time, grad_dif_time, dif_time,  
-                        grad_val, grad_dif_val, dif_val, 
-                        dif_ratio, grad_dif_ratio, 
-                        grad_delta, grad_dif_delta, 
-                        timelist, ratiolist, deltalist):
+def Detection_data_excel(grad_val, grad_time, grad_delta, 
+                        dif_val, dif_time, dif_ratio, 
+                        grad_dif_val, grad_dif_time, grad_dif_delta, grad_dif_ratio, 
+                        dif_grad_val, dif_grad_time, dif_grad_delta, dif_grad_ratio, 
+                        timelist, ratiolist, deltalist, 
+                        x0list_grad, x1list_grad, y0list_grad, y1list_grad):
     wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\detection\detection.xlsx')
     wb.create_sheet('detection_1120')
     wb.create_sheet('detection_all_data_1120')
+    wb.create_sheet('gradients coordinates_1120')
     ws_detection = wb['detection_1120']
     ws_alldata = wb['detection_all_data_1120']
+    ws_gradcoord = wb['gradients coordinates_1120']
 
+    ws_detection["D2"].value = 'gradient process'
     ws_detection["D3"].value = 'value'
     ws_detection["E3"].value = 'time'
     ws_detection["F3"].value = 'gradient'
 
+    ws_detection["H2"].value = 'ratio process'
     ws_detection["H3"].value = 'value'
     ws_detection["I3"].value = 'time'
     ws_detection["J3"].value = 'ratio'
 
+    ws_detection["L2"].value = 'gradient → ratio process'
     ws_detection["L3"].value = 'value'
     ws_detection["M3"].value = 'time'
     ws_detection["N3"].value = 'gradient'
     ws_detection["O3"].value = 'ratio'
 
+    ws_detection["Q2"].value = 'ratio → gradient process'
+    ws_detection["Q3"].value = 'value'
+    ws_detection["R3"].value = 'time'
+    ws_detection["S3"].value = 'ratio'
+    ws_detection["T3"].value = 'gradient'
+
     ws_alldata["D3"].value = 'time'
     ws_alldata["E3"].value = 'ratio'
     ws_alldata["F3"].value = 'gradient'
+
+    ws_gradcoord["D3"].value = 'x0'
+    ws_gradcoord["E3"].value = 'x1'
+    ws_gradcoord["F3"].value = 'y0'
+    ws_gradcoord["G3"].value = 'y1'
 
     for i0 in range(0, len(grad_val)):
         ws_detection.cell(i0 + 4, 4, value = grad_val[i0])
@@ -329,10 +366,22 @@ def Detection_data_excel(grad_time, grad_dif_time, dif_time,
         ws_detection.cell(i2 + 4, 14, value = grad_dif_delta[i2])
         ws_detection.cell(i2 + 4, 15, value = grad_dif_ratio[i2])
 
-    for i3 in range(0, len(time_list)):
-        ws_alldata.cell(i3 + 4, 4, value = timelist[i3])
-        ws_alldata.cell(i3 + 4, 5, value = ratiolist[i3])
-        ws_alldata.cell(i3 + 4, 6, value = deltalist[i3])
+    for i3 in range(0, len(dif_grad_val)):
+        ws_detection.cell(i3 + 4, 17, value = dif_grad_val[i3])
+        ws_detection.cell(i3 + 4, 18, value = dif_grad_time[i3])
+        ws_detection.cell(i3 + 4, 19, value = dif_grad_ratio[i3])
+        ws_detection.cell(i3 + 4, 20, value = dif_grad_delta[i3])
+
+    for i4 in range(0, len(timelist)):
+        ws_alldata.cell(i4 + 4, 4, value = timelist[i4])
+        ws_alldata.cell(i4 + 4, 5, value = ratiolist[i4])
+        ws_alldata.cell(i4 + 4, 6, value = deltalist[i4])
+
+    for i5 in range(0, len(x0list_grad)):
+        ws_gradcoord.cell(i5 + 4, 4, value = x0list_grad[i5])
+        ws_gradcoord.cell(i5 + 4, 5, value = x1list_grad[i5])
+        ws_gradcoord.cell(i5 + 4, 6, value = y0list_grad[i5])
+        ws_gradcoord.cell(i5 + 4, 7, value = y1list_grad[i5])
 
     wb.save(R'C:\Users\admin\Desktop\data\detection\detection.xlsx')
     wb.close()
@@ -345,15 +394,17 @@ if __name__ == '__main__':
     calibration(avg_dif = avg_dif)
 
     xmin_cal, xmax_cal, ymin_cal, ymax_cal = average_value(x_list_dif, y_list_dif, w_list_dif, h_list_dif, x_list_eye, y_list_eye, w_list_eye, h_list_eye)
-    new_delta_list = sorted(delta_list)
-    max_grad = new_delta_list[(len(new_delta_list) - 1)]
-    grad_thresh = max_grad - 2
+    new_delta_list = sorted(delta_list, reverse = True)
+    max_grad = new_delta_list[0]
+    grad_thresh_low = max_grad - 1.5
+    grad_thresh_high = max_grad + 0.5
 
     Blink_calibration(avg_blink = avg_blink, xmin = xmin_cal, xmax = xmax_cal, ymin = ymin_cal, ymax = ymax_cal)
     
-    blink_score_ave = sum(wbratio_list) / len(wbratio_list)
-    score_high = int(blink_score_ave + 5)
-    score_low = int(blink_score_ave - 5)
+    new_wb_list = sorted(wbratio_list, reverse = True)
+    max_blink_score = new_wb_list[0]
+    score_high = int(max_blink_score + 3)
+    score_low = int(max_blink_score - 10)
 
     Excel_write_calibration(x_list_dif, y_list_dif, w_list_dif, h_list_dif, 
                             x_list_eye, y_list_eye, w_list_eye, h_list_eye, 
@@ -386,16 +437,17 @@ if __name__ == '__main__':
 
     avg = None
 
-    timelist_grad, timelist_dif, timelist_grad_dif = [], [], []
-    vallist_grad, vallist_dif, vallist_grad_dif = [], [], []
-    ratiolist_dif, ratiolist_grad_dif = [], []
-    deltalist_grad, deltalist_grad_dif = [], []
+    timelist_grad, timelist_dif, timelist_dif_grad, timelist_grad_dif = [], [], [], []
+    vallist_grad, vallist_dif, vallist_dif_grad, vallist_grad_dif = [], [], [], []
+    ratiolist_dif, ratiolist_dif_grad, ratiolist_grad_dif = [], [], []
+    deltalist_grad, deltalist_dif_grad, deltalist_grad_dif = [], [], []
     time_list, ratio_list, grad_list = [], [], []
+    x0list_grad, y0list_grad, x1list_grad, y1list_grad = [], [], [], []
 
-    val_dif, val_grad, val_grad_dif = 0, 0, 0
+    val_dif, val_grad, val_dif_grad, val_grad_dif = 0, 0, 0, 0
 
     basetime = time.time()
-    blinktime = 0
+    blinktime0, blinktime1 = 0, 0
 
     kernel_hor = np.array([
         [1, 2, 1], 
@@ -436,47 +488,66 @@ if __name__ == '__main__':
         if lines is not None:
             for line in lines:
                 x0, y0, x1, y1 = line[0]
-                grad_Y = y1 - y0
-                grad_list.append(grad_Y)
-                cv2.line(frame, (x0, y0), (x1, y1), (255, 255, 0), 3)
-                if grad_Y > grad_thresh and grad_Y < (max_grad - 1):
-                    val_grad += 1
-                    detectime_grad = time.time() - basetime
-                    vallist_grad.append(val_grad)
-                    timelist_grad.append(detectime_grad)
-                    deltalist_grad.append(grad_Y)
+                delta_Y = y1 - y0
+                delta_X = x1 - x0
+                Gradient = 10 * (delta_Y / delta_X)
+                if Gradient < 5 and Gradient > 0:
+                    grad_list.append(Gradient)
+                    cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 3)
+                    x0list_grad.append(x0)
+                    x1list_grad.append(x1)
+                    y0list_grad.append(y0)
+                    y1list_grad.append(y1)
 
-        if whiteratio < score_high and whiteratio > score_low:
-            timediff = time.time() - blinktime
-            if timediff > 0.3:
-                val_dif += 1
-                detectime_dif = time.time() - basetime
-                vallist_dif.append(val_dif)
-                timelist_dif.append(detectime_dif)
-                ratiolist_dif.append(whiteratio)
-                if grad_Y > grad_thresh and grad_Y < (max_grad - 1):
+        if Gradient > grad_thresh_low and Gradient < grad_thresh_high:
+            timediff0 = time.time() - blinktime0
+            if timediff0 > 0.3:
+                val_grad += 1
+                blinktime0 = time.time()
+                detectime_grad = time.time() - basetime
+                vallist_grad.append(val_grad)
+                timelist_grad.append(detectime_grad)
+                deltalist_grad.append(Gradient)
+                if whiteratio < score_high and whiteratio > score_low:
                     val_grad_dif += 1
                     detectime_grad_dif = time.time() - basetime
                     vallist_grad_dif.append(val_grad_dif)
                     timelist_grad_dif.append(detectime_grad_dif)
                     ratiolist_grad_dif.append(whiteratio)
-                    deltalist_grad_dif.append(grad_Y)
+                    deltalist_grad_dif.append(Gradient)
+
+
+        if whiteratio < score_high and whiteratio > score_low:
+            timediff1 = time.time() - blinktime1
+            if timediff1 > 0.3:
+                val_dif += 1
+                blinktime1 = time.time()
+                detectime_dif = blinktime1 - basetime
+                vallist_dif.append(val_dif)
+                timelist_dif.append(detectime_dif)
+                ratiolist_dif.append(whiteratio)
+                if Gradient > grad_thresh_low and Gradient < grad_thresh_high:
+                    val_dif_grad += 1
+                    detectime_dif_grad= time.time() - basetime
+                    vallist_dif_grad.append(val_dif_grad)
+                    timelist_dif_grad.append(detectime_dif_grad)
+                    ratiolist_dif_grad.append(whiteratio)
+                    deltalist_dif_grad.append(Gradient)
 
         run_time = time.time() - basetime
 
         ratio_list.append(whiteratio)
         time_list.append(run_time)
 
+        cv2.putText(frame, 'Count(grad):', (10, 260), fontType, 1, (0, 0, 255), 2)
+        cv2.putText(frame, str(val_grad), (250, 260), fontType, 1, (0, 0, 255), 2)
+        cv2.putText(frame, 'Count(diff):', (10, 290), fontType, 1, (255, 0, 0), 2)
+        cv2.putText(frame, str(val_dif), (220, 290), fontType, 1, (255, 0, 0), 2)
+        cv2.putText(frame, 'Count(grad - diff):', (10, 320), fontType, 1, (0, 255, 0), 2)
+        cv2.putText(frame, str(val_grad_dif), (380, 320), fontType, 1, (0, 255, 0), 2)
+        cv2.putText(frame, 'Count(diff - grad):', (10, 350), fontType, 1, (0, 255, 255), 2)
+        cv2.putText(frame, str(val_dif_grad), (380, 350), fontType, 1, (0, 255, 255), 2)
 
-        cv2.putText(frame, 'Count(grad):', (10, 200), fontType, 1, (0, 0, 255), 2)
-        cv2.putText(frame, str(val_grad), (200, 200), fontType, 1, (0, 0, 255), 2)
-        cv2.putText(frame, 'Count(diff):', (10, 250), fontType, 1, (255, 0, 0), 2)
-        cv2.putText(frame, str(val_dif), (200, 250), fontType, 1, (255, 0, 0), 2)
-        cv2.putText(frame, 'Count(grad and diff):', (10, 300), fontType, 1, (0, 255, 0), 2)
-        cv2.putText(frame, str(val_grad_dif), (300, 300), fontType, 1, (0, 255, 0), 2)
-
-        # cv2.rectangle(frame, (xmin_cal, ymin_cal), (xmax_cal, ymax_cal), (255, 255, 0), 3)
-        
         cv2.imshow('Frame', frame)
         cv2.imshow('Cut frame', cutframe)
 
@@ -495,11 +566,12 @@ if __name__ == '__main__':
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    Detection_data_excel(timelist_grad, timelist_grad_dif, timelist_dif, 
-                        vallist_grad, vallist_grad_dif, vallist_dif, 
-                        ratiolist_dif, ratiolist_grad_dif, 
-                        deltalist_grad, deltalist_grad_dif, 
-                        time_list, ratio_list, delta_list)
+    Detection_data_excel(vallist_grad, timelist_grad, deltalist_grad, 
+                        vallist_dif, timelist_dif, ratiolist_dif, 
+                        vallist_grad_dif, timelist_grad_dif, ratiolist_grad_dif, deltalist_grad_dif, 
+                        vallist_dif_grad, timelist_dif_grad, deltalist_dif_grad, ratiolist_dif_grad, 
+                        time_list, ratio_list, grad_list, 
+                        x0list_grad, x1list_grad, y0list_grad, y1list_grad)
 
     cap.release()
     video_cap.release()

@@ -1,4 +1,4 @@
-import cv2
+import cv2, time
 import numpy as np
 
 cap_cal = cv2.VideoCapture(0)
@@ -28,6 +28,8 @@ kernel_hor = np.array([
 kernel_hor /= 9
 
 kernel = np.ones((3, 3), np.uint8)
+
+basetime = time.time()
 
 def Frame_coordinates():
     while True:
@@ -109,6 +111,12 @@ def Frame_coordinates():
             ymax_cal = int(ymin_cal + ave_h_eye + 40)
 
         cv2.imshow('Frame', frame_cal)
+
+        endtime = time.time()
+        runtime = endtime - basetime
+
+        if runtime > 20:
+            break
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
