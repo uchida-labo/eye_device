@@ -51,6 +51,7 @@ while True :
             ellipseH = (ellipse[1][1])
             angle = ellipse[2]
             ellipseArea = ellipseW*ellipseH
+            
             #print(ellipseW, ellipseH)
 
             #print(angle)
@@ -63,19 +64,38 @@ while True :
                         cx = int(cx)
                         cy = int(cy)
 
-                        frame = cv2.ellipse(frame,ellipse,(255,0,0),2)
-                        cv2.drawMarker(frame, (cx,cy), (0,0,255), markerType=cv2.MARKER_CROSS, markerSize=10, thickness=1)
+                        
                          #cv2.putText(resimg, str(i+1), (cx+3,cy+3), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,80,255), 1,cv2.LINE_AA)
                         #print(ellipseArea)
                         #cv2.imshow('resimg',resimg)
+                        ymin_c = int(cy - ellipseW)
+                        ymax_c = int(cy + ellipseW)
+                        xmin_c = int(cx - ellipseH)
+                        xmax_c = int(cy + ellipseH)
+                        image_size = 4 * (ellipseW*ellipseH)
+
+                        if image_size == 0:
+                            break
+        
+                        #trim_bin = img_thresh[ymin_c-ymin:ymax_c-ymin, xmin_c-xmin:xmax_c-xmin]
+                        #trim_bin = img_thresh[20:140, 20:340]
+                        #cv2.imshow("trim", trim_bin)
+                        
+                        #white = cv2.countNonZero(trim_bin)
+                        #black = image_size - white
+                        #white_ratio = (white/image_size) * 100
+                        #black_ratio = (black/image_size) * 100
+                        #if white_ratio < 30 and white_ratio > 0:
+                        #    frame = cv2.ellipse(frame,ellipse,(255,0,0),2)
+                        #    cv2.drawMarker(frame, (cx,cy), (0,0,255), markerType=cv2.MARKER_CROSS, markerSize=10, thickness=1)
                         break
     
-        
+
     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
     cv2.imshow('output', frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
