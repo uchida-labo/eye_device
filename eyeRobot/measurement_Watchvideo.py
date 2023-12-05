@@ -26,21 +26,21 @@ def calibration(avg_dif):
 
     fourcc_capcal = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 
-    video_capcal = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_cal.mp4', fourcc_capcal, 30, (640, 360))
+    video_capcal = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_cal.mp4', fourcc_capcal, 30, (640, 360))
 
-    video_bin_dif = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_bindif.mp4', fourcc_capcal, 30, (640, 360))
-    video_edge_dif = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_edgedif.mp4', fourcc_capcal, 30, (640, 360))
-    video_deltadif = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_deltadif.mp4', fourcc_capcal, 30, (640, 360))
+    video_bin_dif = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_bindif.mp4', fourcc_capcal, 30, (640, 360))
+    video_edge_dif = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_edgedif.mp4', fourcc_capcal, 30, (640, 360))
+    video_deltadif = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_deltadif.mp4', fourcc_capcal, 30, (640, 360))
 
-    video_bin_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_binmsk.mp4', fourcc_capcal, 30, (640, 360))
-    video_edge_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_edgemsk.mp4', fourcc_capcal, 30, (640, 360))
-    video_pick_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_pick_msk.mp4', fourcc_capcal, 30, (640, 360))
+    video_bin_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_binmsk.mp4', fourcc_capcal, 30, (640, 360))
+    video_edge_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_edgemsk.mp4', fourcc_capcal, 30, (640, 360))
+    video_pick_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_pick_msk.mp4', fourcc_capcal, 30, (640, 360))
 
-    video_bin_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_bin_line.mp4', fourcc_capcal, 30, (640, 360))
-    video_hor_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_hor_line.mp4', fourcc_capcal, 30, (640, 360))
-    video_dil_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_dil_line.mp4', fourcc_capcal, 30, (640, 360))
-    video_cls_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_cls_line.mp4', fourcc_capcal, 30, (640, 360))
-    video_opn_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\calculation\Capture_opn_line.mp4', fourcc_capcal, 30, (640, 360))
+    video_bin_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_bin_line.mp4', fourcc_capcal, 30, (640, 360))
+    video_hor_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_hor_line.mp4', fourcc_capcal, 30, (640, 360))
+    video_dil_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_dil_line.mp4', fourcc_capcal, 30, (640, 360))
+    video_cls_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_cls_line.mp4', fourcc_capcal, 30, (640, 360))
+    video_opn_line = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\calibration\Capture_opn_line.mp4', fourcc_capcal, 30, (640, 360))
 
 
     basetime = time.time()
@@ -182,14 +182,9 @@ def average_value(xdif, ydif, wdif, hdif, xmsk, ymsk, wmsk, hmsk):
     # else:
     #     ymax = int(ymin + ave_h_eye + 20)
 
-    # xmin_rnd = round(xmin, -1)
-    # xmax_rnd = round(xmax, -1)
-    # ymin_rnd = round(ymin, -1)
-    # ymax_rnd = round(ymax, -1)
-
-    xmin_rnd = int(ave_x0_dif - 10)
+    xmin_rnd = int(ave_x0_dif - 20)
     xmax_rnd = int(xmin_rnd + ave_w_dif + 20)
-    ymin_rnd = int(ave_y0_dif - 10)
+    ymin_rnd = int(ave_y0_dif - 20)
     ymax_rnd = int(ymin_rnd + ave_h_dif + 20)
 
     return xmin_rnd, xmax_rnd, ymin_rnd, ymax_rnd
@@ -197,9 +192,9 @@ def average_value(xdif, ydif, wdif, hdif, xmsk, ymsk, wmsk, hmsk):
 def Excel_write_calibration(x_list_dif, y_list_dif, w_list_dif, h_list_dif, 
                 x_list_eye, y_list_eye, w_list_eye, h_list_eye, 
                 delta_list, new_delta_list, wbratio_list):
-    wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\calibration\excel_data\calibration.xlsx')
-    wb.create_sheet('calibration_1203-3')
-    ws = wb['calibration_1203-3']
+    wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\Watchvideo\excel_data\calibration.xlsx')
+    wb.create_sheet('calibration_Watchvideo_1204-4')
+    ws = wb['calibration_Watchvideo_1204-4']
 
     ws["D3"].value = 'x_dif'
     ws["E3"].value = 'y_dif'
@@ -245,7 +240,7 @@ def Excel_write_calibration(x_list_dif, y_list_dif, w_list_dif, h_list_dif,
         ws.cell(i4 + 4, 20, value = wbratio_list[i4])
         ws.cell(i4 + 4, 21, value = new_wbratio_list[i4])
 
-    wb.save(R'C:\Users\admin\Desktop\data\calibration\excel_data\calibration.xlsx')
+    wb.save(R'C:\Users\admin\Desktop\data\Watchvideo\excel_data\calibration.xlsx')
     wb.close()
 
 def wb_ratio_calculation(binframe, xmin, xmax, ymin, ymax):
@@ -306,13 +301,13 @@ def Detection_data_excel(grad_val, grad_time, grad_delta,
                         dif_grad_val, dif_grad_time, dif_grad_delta, dif_grad_ratio, 
                         timelist, ratiolist, deltalist, gradient_time_list, 
                         x0list_grad, x1list_grad, y0list_grad, y1list_grad):
-    wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\detection\detection.xlsx')
-    wb.create_sheet('detection_1203-3')
-    wb.create_sheet('detection_all_data_1203-3')
-    wb.create_sheet('gradients coordinates_1203-3')
-    ws_detection = wb['detection_1203-3']
-    ws_alldata = wb['detection_all_data_1203-3']
-    ws_gradcoord = wb['gradients coordinates_1203-3']
+    wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\Watchvideo\excel_data\detection.xlsx')
+    wb.create_sheet('detection_Watchvideo_1204-4')
+    wb.create_sheet('detection_all_data_Watchvideo_1204-4')
+    wb.create_sheet('gradients coordinates_Watchvideo_1204-4')
+    ws_detection = wb['detection_Watchvideo_1204-4']
+    ws_alldata = wb['detection_all_data_Watchvideo_1204-4']
+    ws_gradcoord = wb['gradients coordinates_Watchvideo_1204-4']
 
     ws_detection["D2"].value = 'gradient process'
     ws_detection["D3"].value = 'value'
@@ -384,15 +379,15 @@ def Detection_data_excel(grad_val, grad_time, grad_delta,
         ws_gradcoord.cell(i7 + 4, 6, value = y0list_grad[i7])
         ws_gradcoord.cell(i7 + 4, 7, value = y1list_grad[i7])
 
-    wb.save(R'C:\Users\admin\Desktop\data\detection\detection.xlsx')
+    wb.save(R'C:\Users\admin\Desktop\data\Watchvideo\excel_data\detection.xlsx')
     wb.close()
 
 def Detection_data_excel_ver2(time_cal_list, grad_cal_list, 
                             time_detec_list, grad_detec_list, ratio_detec_list, 
                             time_list, grad_list, ratio_list):
-    wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\calibration\excel_data\detection.xlsx')
-    wb.create_sheet('detection_1203-3')
-    ws = wb['detection_1203-3']
+    wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\Watchvideo\excel_data\detection.xlsx')
+    wb.create_sheet('detection_Watchvideo_1204-4')
+    ws = wb['detection_Watchvideo_1204-4']
 
     ws["D2"].value = 'calculation'
     ws["D3"].value = 'time'
@@ -422,7 +417,7 @@ def Detection_data_excel_ver2(time_cal_list, grad_cal_list,
         ws.cell(i2 + 4, 12, value = grad_list[i2])
         ws.cell(i2 + 4, 13, value = ratio_list[i2])
 
-    wb.save(R'C:\Users\admin\Desktop\data\calibration\excel_data\detection.xlsx')
+    wb.save(R'C:\Users\admin\Desktop\data\Watchvideo\excel_data\detection.xlsx')
     wb.close()
 
 if __name__ == '__main__':
@@ -461,17 +456,17 @@ if __name__ == '__main__':
 
     fourcc_cap = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 
-    video_cap = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture.mp4', fourcc_cap, 30, (640, 360))
-    video_cut = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_cut.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_msk.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_knl = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_knl.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_dil = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_dil.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_cls = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_cls.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_opn = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_opn.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_dlt = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_dlt.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_dlt_bin = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_dlt_bin.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_gau = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_gau.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
-    video_gry = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\calibration\video_data\detection\Capture_gry.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_cap = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture.mp4', fourcc_cap, 30, (640, 360))
+    video_cut = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_cut.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_msk = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_msk.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_knl = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_knl.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_dil = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_dil.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_cls = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_cls.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_opn = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_opn.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_dlt = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_dlt.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_dlt_bin = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_dlt_bin.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_gau = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_gau.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
+    video_gry = cv2.VideoWriter(R'C:\Users\admin\Desktop\data\Watchvideo\video_data\detection\Capture_gry.mp4', fourcc_cap, 30, (cutsize_x, cutsize_y))
 
     avg = None
 
@@ -525,7 +520,7 @@ if __name__ == '__main__':
                 # timediff_cal = time.time() - calibrationtime
                 # if timediff_cal > 0.05:
                 #     calibrationtime = time.time()
-            if Gradient < 6 and Gradient > 0:
+            if Gradient < 10 and Gradient > 0:
                 time_cal = time.time() - basetime
                 time_cal_list.append(time_cal)
                 grad_cal_list.append(Gradient)
@@ -618,6 +613,10 @@ if __name__ == '__main__':
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+        if run_time > 900:
+            break
+
 
     print('Grad thresh low:', grad_thresh_low)
     print('Grad thresh high:', grad_thresh_high)
