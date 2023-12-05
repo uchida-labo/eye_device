@@ -103,8 +103,8 @@ def calibration(avg_dif):
                     delta_Y = y1 - y0
                     delta_X = x1 - x0
                     Gradient = 10 * (delta_Y / delta_X)
-                    if Gradient < 6 and Gradient > 0:
-                        delta_list.append(Gradient)
+
+            delta_list.append(Gradient)
 
         cv2.imshow('Frame', frame_cal)
 
@@ -436,8 +436,8 @@ if __name__ == '__main__':
     
     new_wb_list = sorted(wbratio_list, reverse = True)
     max_blink_score = new_wb_list[0]
-    score_high = int(max_blink_score + 6)
-    score_low = int(max_blink_score - 6)
+    score_high = int(max_blink_score + 7)
+    score_low = int(max_blink_score - 7)
 
     Excel_write_calibration(x_list_dif, y_list_dif, w_list_dif, h_list_dif, 
                             x_list_eye, y_list_eye, w_list_eye, h_list_eye, 
@@ -520,11 +520,10 @@ if __name__ == '__main__':
                 # timediff_cal = time.time() - calibrationtime
                 # if timediff_cal > 0.05:
                 #     calibrationtime = time.time()
-            if Gradient < 10 and Gradient > 0:
-                time_cal = time.time() - basetime
-                time_cal_list.append(time_cal)
-                grad_cal_list.append(Gradient)
-                cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 3)
+            time_cal = time.time() - basetime
+            time_cal_list.append(time_cal)
+            grad_cal_list.append(Gradient)
+            cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 3)
 
         if avg is None:
             avg = gray.copy().astype("float")
@@ -626,7 +625,7 @@ if __name__ == '__main__':
     Detection_data_excel_ver2(time_cal_list, grad_cal_list, 
                             time_detec_list, grad_detec_list, ratio_detec_list, 
                             time_list, grad_list, ratio_list)
-    
+
     cap.release()
     video_cap.release()
     video_cut.release()

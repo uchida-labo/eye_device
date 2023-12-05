@@ -1,19 +1,9 @@
-import numpy as np
+import os
 
-timelist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+situation_name = 'calibration_sample'
+date_path = '1205'
+dir_path_excel = 'C:\\Users\\admin\\Desktop\\data\\' + situation_name + '\\excel_data\\' + date_path
+dir_path_video = 'C:\\Users\\admin\\Desktop\\data\\' + situation_name + '\\video_data\\' + date_path
 
-vallist1 = [-1, 2, 4, 6, 3, 0, -2, -4, -1, 0.5, 2]
-
-vallist2 = [0, 0, 1, 2, 4, 6, 10, 15, 20, 15, 13]
-
-A = np.array([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]])
-B = np.array([[-1, 2, 4, 6, 3, 0, -2, -4, -1, 0.5, 2]])
-C = np.array([[0, 0, 1, 2, 4, 6, 10, 15, 20, 15, 13]])
-
-D = np.vstack([A, B])
-E = np.vstack([D, C])
-
-val = E[2]
-val2 = val[5]
-
-print(timelist[-3])
+os.makedirs(dir_path_excel)
+os.makedirs(dir_path_video)

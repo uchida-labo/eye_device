@@ -71,6 +71,7 @@ def calibration(avg_dif):
                 y_list_dif.append(y_dif)
                 w_list_dif.append(w_dif)
                 h_list_dif.append(h_dif)
+                cv2.rectangle(edges_dif, (x_dif, y_dif), ((x_dif + w_dif), (y_dif + h_dif)), (255, 255, 0), 2)
 
 
         # Mask process
@@ -187,9 +188,9 @@ def average_value(xdif, ydif, wdif, hdif, xmsk, ymsk, wmsk, hmsk):
     # ymin_rnd = round(ymin, -1)
     # ymax_rnd = round(ymax, -1)
 
-    xmin_rnd = int(ave_x0_dif - 10)
+    xmin_rnd = int(ave_x0_dif - 20)
     xmax_rnd = int(xmin_rnd + ave_w_dif + 20)
-    ymin_rnd = int(ave_y0_dif - 10)
+    ymin_rnd = int(ave_y0_dif - 20)
     ymax_rnd = int(ymin_rnd + ave_h_dif + 20)
 
     return xmin_rnd, xmax_rnd, ymin_rnd, ymax_rnd
@@ -198,8 +199,8 @@ def Excel_write_calibration(x_list_dif, y_list_dif, w_list_dif, h_list_dif,
                 x_list_eye, y_list_eye, w_list_eye, h_list_eye, 
                 delta_list, new_delta_list, wbratio_list):
     wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\calibration\excel_data\calibration.xlsx')
-    wb.create_sheet('calibration_1203-3')
-    ws = wb['calibration_1203-3']
+    wb.create_sheet('calibration_1205-6')
+    ws = wb['calibration_1205-6']
 
     ws["D3"].value = 'x_dif'
     ws["E3"].value = 'y_dif'
@@ -307,12 +308,12 @@ def Detection_data_excel(grad_val, grad_time, grad_delta,
                         timelist, ratiolist, deltalist, gradient_time_list, 
                         x0list_grad, x1list_grad, y0list_grad, y1list_grad):
     wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\detection\detection.xlsx')
-    wb.create_sheet('detection_1203-3')
-    wb.create_sheet('detection_all_data_1203-3')
-    wb.create_sheet('gradients coordinates_1203-3')
-    ws_detection = wb['detection_1203-3']
-    ws_alldata = wb['detection_all_data_1203-3']
-    ws_gradcoord = wb['gradients coordinates_1203-3']
+    wb.create_sheet('detection_1205-6')
+    wb.create_sheet('detection_all_data_1205-6')
+    wb.create_sheet('gradients coordinates_1205-6')
+    ws_detection = wb['detection_1205-6']
+    ws_alldata = wb['detection_all_data_1205-6']
+    ws_gradcoord = wb['gradients coordinates_1205-6']
 
     ws_detection["D2"].value = 'gradient process'
     ws_detection["D3"].value = 'value'
@@ -391,8 +392,8 @@ def Detection_data_excel_ver2(time_cal_list, grad_cal_list,
                             time_detec_list, grad_detec_list, ratio_detec_list, 
                             time_list, grad_list, ratio_list):
     wb = openpyxl.load_workbook(R'C:\Users\admin\Desktop\data\calibration\excel_data\detection.xlsx')
-    wb.create_sheet('detection_1203-3')
-    ws = wb['detection_1203-3']
+    wb.create_sheet('detection_1205-6')
+    ws = wb['detection_1205-6']
 
     ws["D2"].value = 'calculation'
     ws["D3"].value = 'time'
@@ -525,7 +526,7 @@ if __name__ == '__main__':
                 # timediff_cal = time.time() - calibrationtime
                 # if timediff_cal > 0.05:
                 #     calibrationtime = time.time()
-            if Gradient < 6 and Gradient > 0:
+            if Gradient < 6 :
                 time_cal = time.time() - basetime
                 time_cal_list.append(time_cal)
                 grad_cal_list.append(Gradient)
@@ -597,6 +598,8 @@ if __name__ == '__main__':
 
         cv2.putText(frame, 'Count:', (10, 350), fontType, 1, (0, 0, 255), 2)
         cv2.putText(frame, str(val), (200, 350), fontType, 1, (0, 0, 255), 2)
+
+        cv2.rectangle(frame, (xmin_cal, ymin_cal), (xmax_cal, ymax_cal), (255, 0, 255), 1)
 
         cv2.imshow('Frame', frame)
         cv2.imshow('Cut frame', cutframe)
