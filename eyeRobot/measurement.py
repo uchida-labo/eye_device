@@ -8,7 +8,7 @@ timelist_detec, gradientlist_detec, ratiolist_detec = [], [], []
 timelist, gradientlist, ratiolist = [], [], []
 
 
-date_number_path = '1205-17'
+date_number_path = 'Normal_1206_1'
 
 def Frame_detect():
     cap = cv2.VideoCapture(0)
