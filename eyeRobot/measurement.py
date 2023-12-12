@@ -7,8 +7,7 @@ comparison_time, comparison_gradient, comparison_ratio = [0, 0], [0, 0], [0, 0]
 timelist_detec, gradientlist_detec, ratiolist_detec = [], [], []
 timelist, gradientlist, ratiolist = [], [], []
 
-
-date_number_path = 'Normal_1206_1'
+date_number_path = 'Readbook_1211_1'
 
 def Frame_detect():
     cap = cv2.VideoCapture(0)
@@ -19,7 +18,7 @@ def Frame_detect():
 
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 
-    video_savepath_framedetec = 'C:\\Users\\admin\\Desktop\\measurement_data\\frame_detection\\video_data\\' + date_number_path
+    video_savepath_framedetec = 'C:\\Users\\admin\\Desktop\\measurement_data\\frame_detection\\' + date_number_path
     os.makedirs(video_savepath_framedetec)
 
     video_capture = cv2.VideoWriter(video_savepath_framedetec + '\\capture.mp4', fourcc, 30, (640, 360))
@@ -52,7 +51,7 @@ def Frame_detect():
         for i, cnt in enumerate(contours):
             x, y, w, h = cv2.boundingRect(cnt)
             area = w * h
-            if w > h and area > 30000:
+            if y > 50 and area > 25000:
                 xlist_framedetec.append(x)
                 ylist_framedetec.append(y)
                 wlist_framedetec.append(w)
@@ -81,9 +80,9 @@ def Frame_detect():
     average_h = sum(hlist_framedetec) / len(hlist_framedetec)
 
     xmin = int(average_x - 20)
-    xmax = int(xmin + average_w + 20)
-    ymin = int(average_y - 60)
-    ymax = int(ymin + average_h + 20)
+    xmax = int(xmin + average_w + 60)
+    ymin = int(average_y - 100)
+    ymax = int(ymin + average_h + 40)
 
     cap.release()
     video_capture.release()
@@ -115,10 +114,10 @@ def Thresh_calculation(xmin, xmax, ymin, ymax):
     cut_width = xmax - xmin
     cut_height = ymax - ymin
 
-    video_savepath_threshdetec = 'C:\\Users\\admin\\Desktop\\measurement_data\\thresh_detection\\video_data\\' + date_number_path
+    video_savepath_threshdetec = 'C:\\Users\\admin\\Desktop\\measurement_data\\thresh_detection\\' + date_number_path
     os.makedirs(video_savepath_threshdetec)
 
-    video_capture = cv2.VideoWriter(video_savepath_threshdetec + '\\capture.mp4', fourcc, 30, (cut_width, cut_height))
+    video_capture = cv2.VideoWriter(video_savepath_threshdetec + '\\capture.mp4', fourcc, 30, (640, 360))
     video_cutframe = cv2.VideoWriter(video_savepath_threshdetec + '\\cutframe.mp4', fourcc, 30, (cut_width, cut_height))
     video_gaussian = cv2.VideoWriter(video_savepath_threshdetec + '\\gaussian.mp4', fourcc, 30, (cut_width, cut_height))
     video_gray = cv2.VideoWriter(video_savepath_threshdetec + '\\gray.mp4', fourcc, 30, (cut_width, cut_height))
@@ -178,7 +177,7 @@ def Thresh_calculation(xmin, xmax, ymin, ymax):
                 delta_Y = y1 - y0
                 delta_X = x1 - x0
                 Gradient = 10 * (delta_Y / delta_X)
-                if Gradient < 7 and Gradient > 0:
+                if Gradient < 6 and Gradient > 0 and x1 < xmax:
                     gradientlist_calculation.append(Gradient)
                     cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
 
@@ -224,8 +223,8 @@ def Thresh_calculation(xmin, xmax, ymin, ymax):
 
     sorted_gradientlist = sorted(gradientlist_calculation, reverse = True)
     max_gradient = sorted_gradientlist[0]
-    thresh_gradient_high = max_gradient + 1
-    thresh_gradient_low = max_gradient - 2
+    thresh_gradient_high = max_gradient + 1.5
+    thresh_gradient_low = max_gradient - 1.5
 
     return thresh_ratio_high, thresh_ratio_low, thresh_gradient_high, thresh_gradient_low
 
@@ -251,7 +250,7 @@ def Excel_data_entry():
     ws_fd['F3'] = 'w'
     ws_fd['G3'] = 'h'
     ws_fd['I3'] = 'xmin'
-    ws_fd['i5'] = 'xmax'
+    ws_fd['I4'] = 'xmax'
     ws_fd['I5'] = 'ymin'
     ws_fd['I6'] = 'ymax'
 
@@ -259,9 +258,9 @@ def Excel_data_entry():
     ws_td['D3'] = 'gradient'
     ws_td['E3'] = 'gradient (descending)'
     ws_td['G3'] = 'deviation of gradient (positive)'
-    ws_td['H3'] = 1
+    ws_td['H3'] = 1.5
     ws_td['G4'] = 'deviation of gradient (negative)'
-    ws_td['H4'] = 2
+    ws_td['H4'] = 1.5
     ws_td['G5'] = 'max gradient'
     ws_td['G6'] = 'low thresh of gradient'
     ws_td['G7'] = 'high thresh of gradient'
@@ -294,9 +293,9 @@ def Excel_data_entry():
     average_h = sum(hlist_framedetec) / len(hlist_framedetec)
 
     xmin = int(average_x - 20)
-    xmax = int(xmin + average_w + 20)
+    xmax = int(xmin + average_w + 60)
     ymin = int(average_y - 60)
-    ymax = int(ymin + average_h + 20)
+    ymax = int(ymin + average_h + 40)
 
     sorted_ratiolist = sorted(ratiolist_calculation, reverse = True)
     max_ratio = sorted_ratiolist[0]
@@ -305,8 +304,8 @@ def Excel_data_entry():
 
     sorted_gradientlist = sorted(gradientlist_calculation, reverse = True)
     max_gradient = sorted_gradientlist[0]
-    thresh_gradient_high = max_gradient + 1
-    thresh_gradient_low = max_gradient - 2
+    thresh_gradient_high = max_gradient + 1.5
+    thresh_gradient_low = max_gradient - 1.5
 
     for i0 in range(0, len(xlist_framedetec)):
         ws_fd.cell(i0 + 4, 4, value = xlist_framedetec[i0])
@@ -367,7 +366,7 @@ def main():
     width = xmax - xmin
     height = ymax - ymin
 
-    video_savepath_main = 'C:\\Users\\admin\\Desktop\\measurement_data\\measurement\\video_data\\' + date_number_path
+    video_savepath_main = 'C:\\Users\\admin\\Desktop\\measurement_data\\measurement\\' + date_number_path
     os.makedirs(video_savepath_main)
 
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
@@ -422,7 +421,8 @@ def main():
                 delta_Y = y1 - y0
                 delta_X = x1 - x0
                 Gradient = 10 * (delta_Y / delta_X)
-                cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
+                if Gradient < 10 and Gradient > -5:
+                    cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
 
         if avg is None:
             avg = gray.copy().astype("float")
@@ -471,7 +471,7 @@ def main():
                             timelist_detec.append(detec_time)
                             gradientlist_detec.append(Gradient)
                             ratiolist_detec.append(indexV)
-        
+
         run_time = time.time() - base_time
 
         timelist.append(run_time)
@@ -520,15 +520,5 @@ def main():
     binfd_save.release()
     cv2.destroyAllWindows()
 
-
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
-
