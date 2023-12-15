@@ -7,7 +7,7 @@ comparison_time, comparison_gradient, comparison_ratio = [0, 0], [0, 0], [0, 0]
 timelist_detec, gradientlist_detec, ratiolist_detec = [], [], []
 timelist, gradientlist, ratiolist = [], [], []
 
-date_number_path = 'Readbook_1211_1'
+date_number_path = 'Readbook_1215-1'
 
 def Frame_detect():
     cap = cv2.VideoCapture(0)
@@ -81,8 +81,8 @@ def Frame_detect():
 
     xmin = int(average_x - 20)
     xmax = int(xmin + average_w + 60)
-    ymin = int(average_y - 100)
-    ymax = int(ymin + average_h + 40)
+    ymin = int(average_y - 80)
+    ymax = int(ymin + average_h + 60)
 
     cap.release()
     video_capture.release()
@@ -177,9 +177,9 @@ def Thresh_calculation(xmin, xmax, ymin, ymax):
                 delta_Y = y1 - y0
                 delta_X = x1 - x0
                 Gradient = 10 * (delta_Y / delta_X)
-                if Gradient < 6 and Gradient > 0 and x1 < xmax:
-                    gradientlist_calculation.append(Gradient)
-                    cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
+            if Gradient < 6 and Gradient > 0 and x1 < (xmax - 20):
+                gradientlist_calculation.append(Gradient)
+                cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
 
         cv2.imshow('Blink', binary_fd)
         cv2.imshow('Cut frame', cut_frame)
@@ -294,8 +294,8 @@ def Excel_data_entry():
 
     xmin = int(average_x - 20)
     xmax = int(xmin + average_w + 60)
-    ymin = int(average_y - 60)
-    ymax = int(ymin + average_h + 40)
+    ymin = int(average_y - 80)
+    ymax = int(ymin + average_h + 60)
 
     sorted_ratiolist = sorted(ratiolist_calculation, reverse = True)
     max_ratio = sorted_ratiolist[0]
@@ -399,7 +399,7 @@ def main():
     val = 0
 
     while True:
-        judge0, judge1 = 0, 0
+        judge0, judge1, judge2 = 1, 0, 0
 
         ret, frame = cap.read()
         if not ret: break
@@ -407,7 +407,6 @@ def main():
         cut_frame = frame[ymin:ymax, xmin:xmax]
         gaussian = cv2.GaussianBlur(cut_frame, (5, 5), 1)
         gray = cv2.cvtColor(gaussian, cv2.COLOR_BGR2GRAY)
-
 
         bin_line = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
         horizon = cv2.filter2D(bin_line, -1, kernel = kernel_hor)
@@ -421,8 +420,13 @@ def main():
                 delta_Y = y1 - y0
                 delta_X = x1 - x0
                 Gradient = 10 * (delta_Y / delta_X)
-                if Gradient < 10 and Gradient > -5:
-                    cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
+            if Gradient < 8 and Gradient > -5 and x1 < (xmax - 20):
+                cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
+
+        else:
+            comparison_gradient.append(False)
+            gradientlist_detec.append(False)
+            gradientlist.append(False)
 
         if avg is None:
             avg = gray.copy().astype("float")
@@ -448,9 +452,9 @@ def main():
                     timelist_detec.append(detec_time)
                     gradientlist_detec.append(Gradient)
                     ratiolist_detec.append(whiteratio)
-                    judge0 = 1
+                    judge1 = 1
 
-                if judge0 == 0:
+                if judge1 == 0:
                     indexW = comparison_ratio[-2]
                     indexV = comparison_ratio[-3]
 
@@ -461,9 +465,9 @@ def main():
                         timelist_detec.append(detec_time)
                         gradientlist_detec.append(Gradient)
                         ratiolist_detec.append(indexW)
-                        judge1 = 1
+                        judge2 = 1
 
-                    if judge0 == 0 and judge1 == 0:
+                    if judge1 == 0 and judge2 == 0:
                         if indexV < th_ratio_high and indexV > th_ratio_low:
                             val += 1
                             blink_time = time.time()
@@ -471,6 +475,27 @@ def main():
                             timelist_detec.append(detec_time)
                             gradientlist_detec.append(Gradient)
                             ratiolist_detec.append(indexV)
+                        else:
+                            judge0 = 0
+
+                if judge0 == 0 and judge1 == 0 and judge2 == 0:
+                    bscore_high = th_ratio_high + 2
+                    bscore_low = th_ratio_low - 2
+                    if (indexW < bscore_high and indexW > th_ratio_high) or (indexW < th_ratio_low and indexW > bscore_low):
+                        val += 1
+                        blink_time = time.time()
+                        detec_time = time.time() - base_time
+                        timelist_detec.append(detec_time)
+                        gradientlist_detec.append(Gradient)
+                        ratiolist_detec.append(indexW)
+                    if (indexV < bscore_high and indexV > th_ratio_high) or (indexV < th_ratio_low and indexV > bscore_low):
+                        val += 1
+                        blink_time = time.time()
+                        detec_time = time.time() - base_time
+                        timelist_detec.append(detec_time)
+                        gradientlist_detec.append(Gradient)
+                        ratiolist_detec.append(indexV)
+
 
         run_time = time.time() - base_time
 

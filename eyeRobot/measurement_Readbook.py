@@ -495,8 +495,7 @@ if __name__ == '__main__':
 
     while True:
         ret, frame = cap.read()
-        if not ret:
-            break
+        if not ret: break
 
         cutframe = frame[ymin_cal:ymax_cal, xmin_cal:xmax_cal]
         gaussian = cv2.GaussianBlur(cutframe, (5, 5), 1)
