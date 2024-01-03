@@ -283,6 +283,7 @@ def excel_entry():
 #     A = math.sqrt(B ** 2 + C ** 2)
 #     radian = np.arccos(B / A)
 #     degree = np.rad2deg(radian)
+    
 
 def main_sample():
     xmin, xmax, ymin, ymax = Frame_detect()
