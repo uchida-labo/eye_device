@@ -10,8 +10,8 @@ cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 640) # width setting  1280pxel
 cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 360) # height setting  720pxel
 
 # trimming size setting
-xmin, xmax = 240,600
-ymin, ymax = 50, 350
+xmin, xmax = 230,610 #240, 600
+ymin, ymax = 40, 260 #50, 250
 
 # excel sheet setting
 # sheetname = 'Normal'   # ← Editing section
@@ -34,6 +34,11 @@ width = int(cap1.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap1.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 # video = cv2.VideoWriter(R'F:\\M2卒研\\data\\side_blink\\' + sheetname + '.mp4', fourcc, fps, (width, height))
+
+input = cv2.VideoWriter('C:\\Users\\admin\\Desktop\\data\\samples\\input.mp4', fourcc, 30, (360, 200))
+output = cv2.VideoWriter('C:\\Users\\admin\\Desktop\\data\\samples\\output.mp4', fourcc, 30, (360, 200))
+framedelta_save = cv2.VideoWriter('C:\\Users\\admin\\Desktop\\data\\samples\\framedelta.mp4', fourcc, 30, (360, 200))
+binary_save = cv2.VideoWriter('C:\\Users\\admin\\Desktop\\data\\samples\\binary.mp4', fourcc, 30, (360, 200))
 
 avg = None   # computation frame
 
@@ -64,7 +69,10 @@ while True:
     if not ret:
         break
 
-    gray, bin, edges, contours = image_processing.img_process(frame, xmin, xmax, ymin, ymax)
+    cutframe = frame[50:250, 240:600]
+    cutframe_copy = cutframe.copy()
+
+    gray, bin, edges, contours = image_processing.img_process(frame, 240, 600, 50, 250)
     
     if avg is None:
         avg = gray.copy().astype("float")
@@ -81,26 +89,33 @@ while True:
             val += 1
             blink_time = time.time()
             detection_time = blink_time - base_time
-            cv2.putText(frame, 'Blink!', (190, 380), fontType, 1, (0, 0, 255), 3)
-            blink_list.append(val)
-            detectime_list.append(detection_time)
-            detecwhite_list.append(white_ratio)
+            cv2.putText(frame, 'Blink!', (260, 230), fontType, 1, (0, 0, 255), 3)
+            # blink_list.append(val)
+            # detectime_list.append(detection_time)
+            # detecwhite_list.append(white_ratio)
 
     cv2.putText(frame, str(val), (190, 330), fontType, 1, (0, 0, 255), 3)
     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
 
     cv2.imshow("Frame", frame)
     cv2.imshow("Bin", thresh)
+    cv2.imshow('cut frame', cutframe)
+    cv2.imshow('cut frame copy', cutframe_copy)
+
+    input.write(cutframe_copy)
+    output.write(cutframe)
+    framedelta_save.write(cv2.cvtColor(frameDelta, cv2.COLOR_GRAY2BGR))
+    binary_save.write(cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR))
 
     # print('white[%]', white_ratio)
-    print('width:', width)
-    print('height:', height)
+    # print('width:', width)
+    # print('height:', height)
     
     end_time = time.time()
     run_time = end_time - base_time
     
-    white_list.append(white_ratio)
-    time_list.append(run_time)
+    # white_list.append(white_ratio)
+    # time_list.append(run_time)
 
     # video.write(frame)
 
@@ -118,11 +133,12 @@ while True:
 
 # wb.save(R'F:\M2卒研\data\side_blink\ ' + sheetname + '.xlsx')
 # wb.close()
-plt.plot(time_list, white_list)
-plt.show()
+# plt.plot(time_list, white_list)
+# plt.show()
 # video.release()
+input.release()
+output.release()
+framedelta_save.release()
+binary_save.release()
 cap1.release()
 cv2.destroyAllWindows()
-
-
-

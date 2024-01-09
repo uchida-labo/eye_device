@@ -3,9 +3,10 @@ import numpy as np
 
 date_number_name = ''
 
-xlist, ylist, wlist, hlist = [], [], [], []
-x0list_TD, y0list_TD, x1list_TD, y1list_TD, gradlist_TD, ratiolist_TD, degreelist_TD = [], [], [], [], [], [], []
-x0list_MD, y0list_MD, x1list_MD, y1list_MD, gradlist_MD, ratiolist_MD, degreelist_MD = [], [], [], [], [], [], []
+xlist_FD, ylist_FD, wlist_FD, hlist_FD, timelist_FD = [], [], [], [], []
+x0list_TD, y0list_TD, x1list_TD, y1list_TD, timelist_TD, gradlist_TD, ratiolist_TD, degreelist_TD = [], [], [], [], [], [], [], []
+x0list_MD, y0list_MD, x1list_MD, y1list_MD, timelist_MD, gradlist_MD, ratiolist_MD, degreelist_MD = [], [], [], [], [], [], [], []
+timelist_detection, gradlist_detection, ratiolist_detection, degreelist_detection, radianlist_detection = [], [], [], [], []
 
 kernel_hor = np.array([
     [1, 1, 1],
@@ -66,10 +67,12 @@ def FrameDetection():
             x, y, w, h = cv2.boundingRect(cnt)
             area = w * h
             if y > 50 and area > 25000:
-                xlist.append(x)
-                ylist.append(y)
-                wlist.append(w)
-                hlist.append(h)
+                xlist_FD.append(x)
+                ylist_FD.append(y)
+                wlist_FD.append(w)
+                hlist_FD.append(h)
+                comparison_time = time.time() - basetime
+                timelist_FD.append(comparison_time)
                 cv2.rectangle(edges, (x, y), ((x + w), (y + h)), (255, 0, 0), 2)
 
         cv2.imshow('frame', frame)
@@ -97,7 +100,7 @@ def FrameDetection():
     cap.release()
     cv2.destroyAllWindows()
 
-    xmin, xmax, ymin, ymax = FrameCoordinatePointSet(xlist, ylist, wlist, hlist)
+    xmin, xmax, ymin, ymax = FrameCoordinatePointSet(xlist_FD, ylist_FD, wlist_FD, hlist_FD)
 
     return xmin, xmax, ymin, ymax
 
@@ -188,6 +191,8 @@ def ThreshDetection(xmin, xmax, ymin, ymax):
                     y1list_TD.append(y1)
                     gradlist_TD.append(gradient)
                     ratiolist_TD.append(whiteratio)
+                    comparison_time = time.time() - basetime
+                    timelist_TD.append(comparison_time)
                     cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 2)
                     if whiteratio == 0:
                         degree = EyelidAngleCalculation(x0list_TD, y0list_TD, x1list_TD, y1list_TD)[0]
@@ -264,6 +269,7 @@ def main():
     val = 0
 
     while True:
+        judge0, judge1, judge2 = 1, 0, 0
         ret, frame = cap.read()
         if not ret: break
 
@@ -291,7 +297,7 @@ def main():
                 delta_Y = y1 - y0
                 delta_X = x1 - x0
                 gradient = 10 * (delta_Y / delta_X)
-                if gradient > -10:
+                if gradient > -10 and gradient < 8:
                     x0list_MD.append(x0)
                     y0list_MD.append(y0)
                     x1list_MD.append(x1)
@@ -299,17 +305,81 @@ def main():
                     gradlist_MD.append(gradient)
                     whiteratio = (cv2.countNonZero(binary_framedelta) / (width * height)) * 100
                     ratiolist_MD.append(whiteratio)
+                    comparison_time = time.time() - basetime
+                    timelist_MD.append(comparison_time)
+                    degree, radian = EyelidAngleCalculation(x0list_MD, y0list_MD, x1list_MD, y1list_MD)
+                    degreelist_MD.append(degree)
                     cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 2)
                     if whiteratio == 0:
-                        degree, radian = EyelidAngleCalculation(x0list_MD, y0list_MD, x1list_MD, y1list_MD)
                         dispersion_degree = 2
                         thresh_degree_high = degree + dispersion_degree
                         thresh_degree_low = degree + dispersion_degree
                         if degree > thresh_degree_high or degree < thresh_degree_low:
                             xmin_rotation, xmax_rotation, ymin_rotation, ymax_rotation = RotationFramePoint(xmin, xmax, ymin, ymax, radian)
 
+        if gradient < thresh_grad_high and gradient > thresh_grad_low:
+            timediff = time.time() - blinktime
+            if timediff > 0.2:
+                if whiteratio < thresh_ratio_high and whiteratio > thresh_ratio_low:
+                    val += 1
+                    blinktime = time.time()
+                    detectiontime = time.time() - basetime
+                    timelist_detection.append(detectiontime)
+                    gradlist_detection.append(gradient)
+                    ratiolist_detection.append(whiteratio)
+                    degreelist_detection.append(degree)
+                    radianlist_detection.append(radian)
+                    judge1 = 1
 
+                if judge1 == 0:
+                    indexW = ratiolist_MD[-2]
+                    indexV = ratiolist_MD[-3]
 
+                    if indexW < thresh_ratio_high and indexW > thresh_ratio_low:
+                        val += 1
+                        blinktime = time.time()
+                        detectiontime = time.time() - basetime
+                        timelist_detection.append(detectiontime)
+                        gradlist_detection.append(gradient)
+                        ratiolist_detection.append(whiteratio)
+                        degreelist_detection.append(degree)
+                        radianlist_detection.append(radian)
+                        judge2 = 1
 
+                    if judge1 == 0 and judge2 == 0:
+                        if indexV < thresh_ratio_high and indexV > thresh_ratio_low:
+                            val += 1
+                            blinktime = time.time()
+                            detectiontime = time.time() - basetime
+                            timelist_detection.append(detectiontime)
+                            gradlist_detection.append(gradient)
+                            ratiolist_detection.append(whiteratio)
+                            degreelist_detection.append(degree)
+                            radianlist_detection.append(radian)
+                        else:
+                            judge0 = 0
 
+                if judge0 == 0 and judge1 == 0 and judge2 == 0:
+                    bscore_high = thresh_ratio_high + 2
+                    bscore_low = thresh_ratio_low - 2
+                    if (indexW < bscore_high and indexW > thresh_ratio_high) or (indexW > bscore_low and indexW < thresh_ratio_low):
+                        val += 1
+                        blinktime = time.time()
+                        detectiontime = time.time() - basetime
+                        timelist_detection.append(detectiontime)
+                        gradlist_detection.append(gradient)
+                        ratiolist_detection.append(whiteratio)
+                        degreelist_detection.append(degree)
+                        radianlist_detection.append(radian)
+                    if (indexV < bscore_high and indexV > thresh_ratio_high) or (indexV > bscore_low and indexV < thresh_ratio_low):
+                        val += 1
+                        blinktime = time.time()
+                        detectiontime = time.time() - basetime
+                        timelist_detection.append(detectiontime)
+                        gradlist_detection.append(gradient)
+                        ratiolist_detection.append(whiteratio)
+                        degreelist_detection.append(degree)
+                        radianlist_detection.append(radian)
 
+if __name__ == '__main__':
+    main()
