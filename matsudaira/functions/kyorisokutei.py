@@ -1,14 +1,12 @@
 import cv2
 import math
 import numpy as np
-#import openpyxl
-#import pandas as pd
 import xlwings as xw
 import time
 t = time.time()
 
 #excel起動
-#wb = xw.Book()
+#wb = xw.Book() #起動は最後に持ってきたほうが軽くなる
 #mylist = [] #excelに追加するリスト
 
 threshold = 100 #二値化に用いる閾値
@@ -40,16 +38,15 @@ video_img_result = cv2.VideoWriter(R'C:\Users\mkouk\Desktop\VSCode_video\img_res
 #　縦線を消すカーネル
 kernel = np.array([[0, 0, -1],  
                     [0, 0, 1], 
-                    [0, 0, 0],])
+                    [0, 0, 0]]) #np.float32
 
 #　横線を消すカーネル
 kernel2 = np.array([[0, 0, 0], 
                     [1, -1, 0], 
-                    [0, 0, 0],])
+                    [0, 0, 0]])
 
 
 kernel3 = np.ones((3, 3), np.uint8)
-#kernel3 = np.ones((5,5),np.uint8)
 
 lines = None # linesの変数を定義
 erosion1_trimming = None
@@ -77,7 +74,7 @@ while True :
     img_reverse = cv2.bitwise_not(img_thresh) #　白黒反転
     
     mask = np.zeros(img_thresh.shape, np.uint8) #黒い画面を作る
-    mask_white = np.ones(img_thresh.shape, np.uint8)*255
+    #mask_white = np.ones(img_thresh.shape, np.uint8)*255
 
     #　白色のものを輪郭抽出
     contours, hierarchy = cv2.findContours(img_reverse, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) 
@@ -91,11 +88,6 @@ while True :
     cv2.imshow("dst2", dst2)
    
 
-    #　上で抽出した横線を縦線抽出の映像にかぶせて
-    contours2, hierarchy2 = cv2.findContours(dst, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    for i2,cnt2 in enumerate(contours2):
-        dst3 = cv2.drawContours(dst2, [cnt2], -1, 0, thickness=-1) # 対象の塊を黒く塗りつぶす
-
     dilation_line2 = cv2.dilate(dst, kernel = kernel3, iterations = 1)
     dilation_line2_reverse = cv2.bitwise_not(dilation_line2)
     bitwise_and = cv2.bitwise_and(dst2, dilation_line2_reverse)
@@ -104,7 +96,7 @@ while True :
     cv2.imshow("bitwise_and", bitwise_and)
     dilation_line = cv2.dilate(bitwise_and, kernel = kernel3, iterations = 1) #　線を太くする。dst2もdst3も一緒の映像が入ってる
     erosion1 = cv2.erode(dilation_line,kernel3,iterations = 1) #　線を細くする。
-    #img_mask = cv2.medianBlur(erosion1, ksize = 3)
+
     
     lines2 = cv2.HoughLinesP(dst, rho=1, theta=np.pi/360, threshold=10, minLineLength=30, maxLineGap=5) #　まぶた検出
     
@@ -154,11 +146,11 @@ while True :
             white = cv2.countNonZero(trim_bin)
             black = image_size - white
             white_ratio = (white/image_size) * 100
-            black_ratio = (black/image_size) * 100
+            #black_ratio = (black/image_size) * 100
             
 
-            if (differencex <= 10) and (differencey >= 20): #and (y1 > y2)
-                if white_ratio < 75 and white_ratio > 55:
+            if (differencex <= 10) and (differencey >= 20): #検出された線を長さと傾きの条件で絞る
+                if white_ratio < 75 and white_ratio > 55: #検出された線周りの白割合が適切なものを虹彩と特定する
 
                     frame = cv2.line(frame, (xmin+EyeDA_xmin+x1, ymin+EyeDA_ymin+y1), (xmin+EyeDA_xmin+x2, ymin+EyeDA_ymin+y2), (0, 0, 255), 3) #　瞳の線
                     #cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
@@ -167,8 +159,9 @@ while True :
                     #瞳の検出座標(x)をリストに追加していく
                     #mylist.append(xmiddle)
 
-                    #print(white_ratio)  
-                    print(xmiddle+EyeDA_xmin+xmin)
+                    #print(white_ratio)
+
+                    print(xmiddle+EyeDA_xmin+xmin) #虹彩のz座標表示(480×640中)
                     break
 
     #　トリミングエリア指定
@@ -201,9 +194,10 @@ while True :
     #video_dst2.write(cv2.cvtColor(dst2, cv2.COLOR_GRAY2BGR))
     total_count += 1
     
+    #何秒プログラムを実行するか決める
     c = time.time()
     if c - t >= 10 or cv2.waitKey(1) & 0xFF == ord('q'):  
-        #xw.Range("B2", transpose=True).value = mylist
+        #xw.Range("B2", transpose=True).value = mylist          #最後にexcelにデータをプロット
         #detection_rate = (detection_count/total_count)*100
         #xw.Range("C2", transpose=True).value = detection_rate
         #xw.Range("D2", transpose=True).value = detection_count
