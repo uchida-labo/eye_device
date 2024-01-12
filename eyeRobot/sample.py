@@ -1,9 +1,5 @@
-import os
+import time
 
-situation_name = 'calibration_sample'
-date_path = '1205'
-dir_path_excel = 'C:\\Users\\admin\\Desktop\\data\\' + situation_name + '\\excel_data\\' + date_path
-dir_path_video = 'C:\\Users\\admin\\Desktop\\data\\' + situation_name + '\\video_data\\' + date_path
+hour_min_sec = time.strftime('%m%d_%H-%M-%S')
 
-os.makedirs(dir_path_excel)
-os.makedirs(dir_path_video)
+print(hour_min_sec + 'sample')
