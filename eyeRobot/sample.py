@@ -1,96 +1,83 @@
-import cv2, time
+import cv2, math
 import numpy as np
 
 cap = cv2.VideoCapture(0)
 
-kernel_hor = np.array([
-    [-1, -1, -1],
-    [0, 0, 0],
-    [1, 1, 1]])
+xmin, xmax = 100, 300
+ymin, ymax = 200, 400
 
-kernel_hor_dlt = np.array([
-    [1, 1, 1],
-    [0, 0, 0],
-    [-1, -1, -1]])
+width = 200
+height = 200
 
-kernel_ver = np.array([
-    [-1, 0, 1],
-    [-1, 0, 1],
-    [-1, 0, 1]])
+topleft = (300,50)
+topright = (500, 50)
+bottomleft = (300, 250)
+bottomright = (500, 250)
 
-kernel_ver_dlt = np.array([
-    [1, 0, -1],
-    [1, 0, -1],
-    [1, 0, -1]])
-
-kernel_cal = np.ones((3, 3), np.uint8)
+# pts1 = np.float32([topleft, topright, bottomleft, bottomright])
+# pts2 = np.float32([[[100, 100], [500, 100], [0, height], [width, height]]])
 
 while True:
     ret, frame = cap.read()
     if not ret: break
 
-    gaussian = cv2.GaussianBlur(frame, (5, 5), 1)
-    gray = cv2.cvtColor(gaussian, cv2.COLOR_BGR2GRAY)
-    binary_rev = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY_INV)[1]
-    binary = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
+    originpts = np.array([topleft, bottomleft, bottomright, topright], dtype = np.float32)
+    center = (originpts[0] + originpts[2]) / 2
 
-    eyelid = cv2.filter2D(binary_rev, -1, kernel_hor)
-    eyelid_dlt = cv2.filter2D(binary_rev, -1, kernel_hor_dlt)
-    pupil = cv2.filter2D(binary_rev, -1, kernel_ver)
-    pupil_dlt = cv2.filter2D(binary_rev, -1, kernel_ver_dlt)
+    rotation_matrix = cv2.getRotationMatrix2D(tuple(center), 30, 1.0)
+    rotatedroi = cv2.warpAffine(frame, rotation_matrix, (640, 480))
 
-    # eyelid = cv2.dilate(eyelid, kernel_cal, 1)
-    # eyelid_dlt = cv2.dilate(eyelid_dlt, kernel_cal, 1)
-    # pupil = cv2.dilate(pupil, kernel_cal, 1)
-    # pupil_dlt = cv2.dilate(pupil_dlt, kernel_cal, 1)
-
-    # eyelid = cv2.bitwise_not(eyelid)
-    eyelid_dlt = cv2.bitwise_not(eyelid_dlt)
-    pupil_dlt = cv2.bitwise_not(pupil_dlt)
-
-    andprocess_1 = cv2.bitwise_and(pupil, eyelid_dlt)
-    andprocess_2 = cv2.bitwise_or(andprocess_1, pupil)
-    andprocess_3 = cv2.bitwise_and(andprocess_2, eyelid_dlt)
-    # andprocess_1_dlt = cv2.dilate(andprocess_1, kernel_cal, 1)
-    # andprocess_2 = cv2.bitwise_and(andprocess_1, eyelid_dlt)
-    # andprocess_2 = cv2.erode(andprocess_2, kernel_cal, 1)
+    mask = np.zeros_like(frame, dtype=np.uint8)
+    # cv2.fillConvexPoly(mask, originpts.astype(np.int32), (0, 255, 0))
+    # cv2.rectangle(mask, topleft, bottomright, (255, 0, 0), 2)
+    result = cv2.bitwise_and(mask, frame)
+    result += rotatedroi
+    cutresult = result[50:250, 300:500]
 
 
 
-    dilation_eyelid = cv2.bitwise_not(cv2.dilate(eyelid_dlt, kernel_cal, 1))
-    iris_vertical = cv2.bitwise_and(pupil, dilation_eyelid)
-    iris = cv2.bitwise_and(cv2.dilate(iris_vertical, kernel_cal, 1), eyelid)
-
-    # iris_cls = cv2.morphologyEx(andprocess_2, cv2.MORPH_CLOSE, kernel_cal)
-    eyelid_lines = cv2.HoughLinesP(eyelid, rho = 1, theta = np.pi / 360, threshold = 90, minLineLength = 130, maxLineGap = 70)
-    if eyelid_lines is not None:
-        x0, y0, x1, y1 = eyelid_lines[0][0][0], eyelid_lines[0][0][1], eyelid_lines[0][0][2], eyelid_lines[0][0][3]
-        if x1 < 550:
-            cv2.line(frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
-            iris_vertical_line = cv2.HoughLinesP(andprocess_1, rho = 1, theta = np.pi / 360, threshold = 5, minLineLength = 20, maxLineGap = 200)
-            if iris_vertical_line is not None:
-                x0_iris, y0_iris, x1_iris, y1_iris = iris_vertical_line[0][0][0], iris_vertical_line[0][0][1], iris_vertical_line[0][0][2], iris_vertical_line[0][0][3]
-                if x1_iris > 400 and x1_iris < 500:
-                    print('iris line = ', iris_vertical_line[0][0][0])
-                    cv2.line(frame, (x0_iris, y0_iris), (x1_iris, y1_iris), (0, 0, 255), 2)
 
 
 
-    # cv2.imshow('binary_rev', binary)
-    cv2.imshow('eyelid', eyelid)
-    cv2.imshow('eyelid dlt', eyelid_dlt)
-    cv2.imshow('pupil', pupil)
-    cv2.imshow('pupil dlt', pupil_dlt)
-    cv2.imshow('and process 1', andprocess_1)
-    # cv2.imshow('and process 1 close', andprocess_1_dlt)
-    cv2.imshow('and process 2', andprocess_2)
-    cv2.imshow('and process 3', andprocess_3)
-    # cv2.imshow('iris_vertical', iris_cls)
+    # rotatedpts = cv2.transform(np.array([originpts]), rotation_matrix)[0]
+
+    # dstpts = np.array([[0, 0], [0, 200], [200, 200], [200, 0]], dtype = np.float32)
+    # matrix = cv2.getPerspectiveTransform(rotatedpts, dstpts)
+    # result = cv2.warpPerspective(frame, matrix, (width + 100, height + 100))
+
+    # cutframe = frame[ymin:ymax, xmin:xmax]
+
+    # tplx = 100 * math.cos(math.radians(30)) - 300 * math.sin(math.radians(30))
+    # tply = 100 * math.sin(math.radians(30)) + 300 * math.cos(math.radians(30))
+
+    # tprx = 300 * math.cos(math.radians(30)) - 300 * math.sin(math.radians(30))
+    # tpry = 300 * math.sin(math.radians(30)) + 300 * math.cos(math.radians(30))
+
+    # btlx = 100 * math.cos(math.radians(30)) - 400 * math.sin(math.radians(30))
+    # btly = 100 * math.sin(math.radians(30)) + 400 * math.cos(math.radians(30))
+
+    # btrx = 300 * math.cos(math.radians(30)) - 400 * math.sin(math.radians(30))
+    # btry = 300 * math.sin(math.radians(30)) + 400 * math.cos(math.radians(30))
+
+    # pts1 = np.float32([topleft, topright, bottomleft, bottomright])
+    # pts2 = np.float32([[tplx, tply], [btlx, btly], [tprx, tpry], [btrx, btry]])
+
+    # origin_size = np.float32([[0, 0], [0, 200], [200, 0], [200, 200]])
+
+    # center = (pts1[0] + pts1[3]) / 2 
+
+    # matrix = cv2.getPerspectiveTransform(pts2, origin_size)
+    # result = cv2.warpPerspective(frame, matrix, (width + 100, height + 100))
+
+    # # rotation_matrix = cv2.getRotationMatrix2D((100, 100), 30, 1)
+    # # rotated_result = cv2.warpAffine(result, rotation_matrix, (width, height))
+
+    cv2.imshow('result', result)
+    # # cv2.imshow('rotated result', rotated_result)
     cv2.imshow('frame', frame)
-    # cv2.imshow('iris', iris)
-                    
+    cv2.imshow('cut result', cutresult)
+    # cv2.imshow('cutframe', cutframe)
 
-    # print(eyelid_lines.shape)
 
     if cv2.waitKey(1) & 0xFF == ord('q'): break
 

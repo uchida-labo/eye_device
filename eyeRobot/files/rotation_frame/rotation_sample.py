@@ -1,3 +1,5 @@
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any
 import cv2, openpyxl, os, time, math, statistics, threading
 import numpy as np
 
@@ -5,10 +7,10 @@ date_number_name = time.strftime('%m%d_%H-%M-%S')
 
 xlist_FD, ylist_FD, wlist_FD, hlist_FD, timelist_FD = [], [], [], [], []
 x0list_TD, y0list_TD, x1list_TD, y1list_TD, timelist_TD, gradlist_TD, ratiolist_TD, degreelist_TD, radianlist_TD = [], [], [], [], [], [], [], [], []
-x0list_MD, y0list_MD, x1list_MD, y1list_MD, timelist_MD, gradlist_MD, ratiolist_MD, degreelist_MD, radianlist_MD = [], [], [], [], [], [], [], []. []
+x0list_MD, y0list_MD, x1list_MD, y1list_MD, timelist_MD, gradlist_MD, ratiolist_MD, degreelist_MD, radianlist_MD = [], [], [], [], [], [], [], [], []
 timelist_detection, gradlist_detection, ratiolist_detection, degreelist_detection, radianlist_detection = [], [], [], [], []
 intervaltime_list, interval_list = [], []
-
+x0list_BT, y0list_BT, x1list_BT, y1list_BT, gradlist_BT, ratiolist_BT, degreelist_BT, radianlist_BT, timelist_BT, tolerancetime_list = [], [], [], [], [], [], [], [], [], []
 
 kernel_hor = np.array([
     [1, 1, 1],
@@ -240,14 +242,77 @@ def ThreshDetection(xmin, xmax, ymin, ymax):
     return thresh_grad_high, thresh_grad_low, thresh_ratio_high, thresh_ratio_low, mode_degree
 
 def RotationFramePoint(xmin, xmax, ymin, ymax, radian):
-    xmin_rotation = xmin * math.cos(radian) - ymin * math.sin(radian)
-    xmax_rotation = xmax * math.cos(radian) - ymax * math.sin(radian)
-    ymin_rotation = xmin * math.sin(radian) + ymin * math.cos(radian)
-    ymax_rotation = xmax * math.sin(radian) + ymax * math.cos(radian)
+    xmin_rotation = xmin * math.cos(radian) + ymin * math.sin(radian)
+    xmax_rotation = xmax * math.cos(radian) + ymax * math.sin(radian)
+    ymin_rotation = ymin * math.cos(radian) - xmin * math.sin(radian)
+    ymax_rotation = ymax * math.cos(radian) - xmax * math.sin(radian)
 
     return xmin_rotation, xmax_rotation, ymin_rotation, ymax_rotation
 
-# def BlinkToleranceDetection():
+class ToleranceDetection(threading.Thread):
+    def __init__(self, xmin, xmax, ymin, ymax, interval, th_grad_low):
+        super(ToleranceDetection, self).__init__()
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        self.interval = interval
+        self.th_grad_low = th_grad_low
+        self.tolerancetime = None
+
+    def BlinkToleranceDetectionThread(self):
+        cap = cv2.VideoCapture(0)
+        avg = None
+        width = self.xmax - self.xmin
+        height = self.ymax - self.ymin
+        basetime = time.time()
+        while True:
+            ret, frame = cap.read()
+            if not ret: break
+
+            cutframe = frame[self.ymin:self.ymax, self.xmin:self.xmax]
+            gau = cv2.GaussianBlur(cutframe, (5, 5), 1)
+            gray = cv2.cvtColor(gau, cv2.COLOR_BGR2GRAY)
+
+            bin_line = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
+            horizon = cv2.filter2D(bin_line, -1, kernel_hor)
+            dilation = cv2.dilate(horizon, kernel_cal, 1)
+            lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 70)
+
+            if avg is None:
+                avg = gray.copy().astype("float")
+                continue
+
+            cv2.accumulateWeighted(gray, avg, 0.8)
+            framedelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
+            bin_fd = cv2.threshold(framedelta, 3, 255, cv2.THRESH_BINARY)[1]
+
+            if lines is not None:
+                x0, y0, x1, y1 = lines[0][0][0], lines[0][0][1], lines[0][0][2], lines[0][0][3]
+                x0list_BT.append(x0)
+                y0list_BT.append(y0)
+                x1list_BT.append(x1)
+                y1list_BT.append(y1)
+                grad = ((y1 - y0) / (x1 - x0)) * 10
+                degree, radian = EyelidAngleCalculation(x0list_BT, y0list_BT, x1list_BT, y1list_BT)
+                whiteratio = (cv2.countNonZero(bin_fd) / (width * height)) * 100
+                runtime = time.time() - basetime
+                gradlist_BT.append(grad)
+                ratiolist_BT.append(whiteratio)
+                degreelist_BT.append(degree)
+                radianlist_BT.append(radian)
+                timelist_BT.append(runtime)
+
+                if whiteratio > 10 and grad > self.th_grad_low:
+                    self.tolerancetime = time.time() - basetime + self.interval
+                    tolerancetime_list.append(tolerancetime_list)
+                    break
+            
+            if cv2.waitKey(1) & 0xFF == ord('q'): break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
 
 def ListAppendForMD(detectiontime, gradient, whiteratio, degree, radian):
     timelist_detection.append(detectiontime)
@@ -259,6 +324,34 @@ def ListAppendForMD(detectiontime, gradient, whiteratio, degree, radian):
 def ListAppendForInterval(time, interval):
     intervaltime_list.append(time)
     interval_list.append(interval)
+
+class Rotation(threading.Thread):
+    def __init__(self, xmin, xmax, ymin, ymax, mode_degree_TD, mode_degree_MD):
+        super(Rotation, self).__init__()
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        self.mode_degree_TD = mode_degree_TD
+        self.mode_degree_MD = mode_degree_MD
+        self.xmin_rotation = None
+        self.xmax_rotation = None
+        self.ymin_rotation = None
+        self.ymax_rotation = None
+        self.th_grad_high = None
+        self.th_grad_low = None
+        self.th_ratio_high = None
+        self.th_ratio_low = None
+        self.th_degree_high = None
+        self.th_degree_low = None
+    
+    def RotationFrameThreshDetaction(self):
+        delta_degree = int(self.mode_degree_TD - self.mode_degree_MD)
+        self.xmin_rotation, self.xmax_rotation, self.ymin_rotation, self.ymax_rotation = RotationFramePoint(self.xmin, self.xmax, self.ymin, self.ymax, degree)
+
+
+
+
 
 def main():
     xmin, xmax, ymin, ymax = FrameDetection()
@@ -380,17 +473,24 @@ def main():
 
         runtime = time.time() - basetime
         
-        if interval > 10:
+        if interval > 2:
             average_ratio_past = (ratiolist_MD[-1] + ratiolist_MD[-2] + ratiolist_MD[-3]) / 3
             delta_grad_V = abs(gradlist_MD[-3] - gradlist_MD[-2])
             delta_grad_W = abs(gradlist_MD[-2] - gradlist_MD[-1])
             if average_ratio_past < 5 and delta_grad_V < 0.08 and delta_grad_W < 0.08:
+                version = str(runtime)
+                tolerancethread = ToleranceDetection(xmin, xmax, ymin, ymax, interval, thresh_grad_low)
+                tolerancethread.start()
 
+                tolerancethread.join()
 
-            dispersion_degree = 2
-            thresh_degree_high = degree + dispersion_degree
-            thresh_degree_low = degree + dispersion_degree
-            if degree > thresh_degree_high or degree < thresh_degree_low:
+                tolerancetime = tolerancethread.tolerancetime
+
+            elif interval > 15:
+                version = time.strftime('%H%M%S')
+                remaining_time = 900 - (time.time() - basetime)
+                modevalue_degree = statistics.mode(degreelist_MD[-400:])
+
                 version_update = time.strftime('%m%d_%H-%M-%S')
                 remaining_time = 900 - (time.time() - basetime)
                 xmin_rotation, xmax_rotation, ymin_rotation, ymax_rotation = RotationFramePoint(xmin, xmax, ymin, ymax, radian)
