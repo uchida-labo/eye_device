@@ -292,7 +292,7 @@ def main():
         gaussian = cv2.GaussianBlur(cutframe, (5, 5), 1)
         gray = cv2.cvtColor(gaussian, cv2.COLOR_BGR2GRAY)
 
-        binary_eyelid = cv2.threshold(gray, 3, 255, cv2.THRESH_BINARY)[1]
+        binary_eyelid = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
         horizon = cv2.filter2D(binary_eyelid, -1, kernel_hor)
         dilation = cv2.dilate(horizon, kernel_cal, iterations = 1)
         lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 30)

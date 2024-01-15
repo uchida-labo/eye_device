@@ -26,6 +26,8 @@ kernel2 = np.array([[0, 0, 0],
 
 kernel3 = np.ones((3, 3), np.uint8)
 
+iris_trimmming, lines = None, None
+
 while True :
 
     #frame取得
