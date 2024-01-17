@@ -5,7 +5,7 @@ from queue import Queue
 # --Frame auto detect process--
 
 def ExcelEntry_FAD(path, version, xlist, ylist, wlist, hlist, timelist):
-    excelpath_FAD = 'C:\\Users\\admin\\blink_data\\' + path + '\\FrameAutoDetect\\framecoordinate.xlsx'
+    excelpath_FAD = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\FrameAutoDetect' + version + '\\index.xlsx'
     wb = openpyxl.Workbook()
 
     wb.create_sheet(version)
@@ -60,7 +60,7 @@ def FrameAutoDetect(path, version, rotation_status):
 
     # Video save setting
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-    savepath = 'C:\\Users\\admin\\blink_data\\' + path + '\\FrameAutoDetect' + version
+    savepath = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\FrameAutoDetect' + version
     if rotation_status is not None:
         savepath = savepath + '_rotation'
     os.makedirs(savepath)
@@ -91,8 +91,6 @@ def FrameAutoDetect(path, version, rotation_status):
         if avg is None:
             avg = gray.copy().astype("float")
             continue
-
-        cv2.accumulateWeighted(gray, avg, 0.8)
 
         cv2.accumulateWeighted(gray, avg, 0.8)
         framedelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
@@ -145,9 +143,9 @@ def FrameAutoDetect(path, version, rotation_status):
 
 # --Threshold auto detect process--
 
-def EyelidParameterCalculation(x0list, y0list, x1list, y1list):
-    parallel = x1list[-1] - x0list[-1]
-    perpendicular = y1list[-1] - y0list[-1]
+def EyelidParameterCalculation(x0, y0, x1, y1):
+    parallel = x1[-1] - x0[-1]
+    perpendicular = y1[-1] - y0[-1]
     gradient = (perpendicular / parallel) * 10
     oblique = math.sqrt(parallel ** 2 + perpendicular ** 2)
     radian = np.arccos(parallel / oblique)
@@ -168,7 +166,7 @@ def ExcelEntry_TAD(path, version, x0list, y0list, x1list, y1list, timelist, grad
 
     average_degree = sum(stopblinkdegree) / len(stopblinkdegree)
 
-    excelpath_TAD = 'C:\\Users\\admin\\blink_data\\' + path + '\\ThreshAutoDetect\\index.xlsx'
+    excelpath_TAD = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\ThreshAutoDetection' + version + '\\index.xlsx'
     wb = openpyxl.Workbook()
 
     wb.create_sheet(version)
@@ -197,7 +195,7 @@ def ExcelEntry_TAD(path, version, x0list, y0list, x1list, y1list, timelist, grad
 
     ws['O5'] = 'stop blink degree'
 
-    ws['O4'] = 'average degree (stop blink) : ' + average_degree
+    ws['O4'] = 'average degree (stop blink) : ' + str(average_degree)
 
     for i0 in range(0, len(x0list)):
         ws.cell(i0 + 6, 4, x0list[i0])
@@ -225,7 +223,7 @@ def ThreshAutoDetection(path, version, xmin, xmax, ymin, ymax, rotation_status):
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     width = xmax - xmin
     height = ymax - ymin
-    savepath = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\ThreshDetection' + version
+    savepath = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\ThreshAutoDetection' + version
     if rotation_status is not None:
         savepath = savepath + '_rotation'
     os.makedirs(savepath)
@@ -279,11 +277,12 @@ def ThreshAutoDetection(path, version, xmin, xmax, ymin, ymax, rotation_status):
         whiteratio = (cv2.countNonZero(binary_framedelta) / (width * height)) * 100
 
         if lines is not None:
-            x0, y0, x1, y1 = lines[0][0][0], lines[0][0][1], lines[0][0][2], lines[0][0][3]
-            delta_Y = y1 - y0
-            delta_X = x1 - x0
-            grad = 10 * (delta_Y / delta_X)
-            if grad > -10:
+            for line in lines:
+                x0, y0, x1, y1 = line[0]
+                delta_Y = y1 - y0
+                delta_X = x1 - x0
+                grad = 10 * (delta_Y / delta_X)
+            if grad < 10 and grad > -5:
                 x0list_TAD.append(x0)
                 y0list_TAD.append(y0)
                 x1list_TAD.append(x1)
@@ -347,7 +346,7 @@ def ThreshAutoDetection(path, version, xmin, xmax, ymin, ymax, rotation_status):
 # --Blink tolerance time measurement thread--
 
 def ExcelEntry_BTM(path, version, x0list, y0list, x1list, y1list, timelist, gradlist, ratiolist, degreelist, radianlist, tolerancetimelist, endtimelist):
-    excelpath_BTM = 'C:\\Users\\admin\\blink_data\\' + path + '\\BlinkToleranceMeasurement\\index.xlsx'
+    excelpath_BTM = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\BlinkToleranceMeasurement' + version + '\\index.xlsx'
     wb = openpyxl.Workbook()
     wb.create_sheet(version)
     ws = wb[version]
@@ -380,127 +379,125 @@ def ExcelEntry_BTM(path, version, x0list, y0list, x1list, y1list, timelist, grad
         ws.cell(i1 + 4, 12, radianlist[i1])
         ws.cell(i1 + 4, 13, ratiolist[i1])
 
-    for i2 in range(0, len(0, endtimelist)):
+    for i2 in range(0, len(endtimelist)):
         ws.cell(i2 + 4, 15, endtimelist[i2])
         ws.cell(i2 + 4, 16, tolerancetimelist[i2])
 
     wb.save(excelpath_BTM)
     wb.close()
 
-def ToleranceThread(path, version, xmin, xmax, ymin, ymax, interval, thresh_grad_low, starttime, rotation_status, queue_midway, queue_finish):
-    cap = cv2.VideoCapture(0)
+def BlinkToleranceMeasurement(path, version, xmin_BTM, xmax_BTM, ymin_BTM, ymax_BTM, interval_BTM, thresh_grad_low_BTM, starttime_BTM, rotation_status):
+    cap_BTM = cv2.VideoCapture(0)
 
     # Video save setting
-    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-    width = xmax - xmin
-    height = ymax - ymin
-    savepath =  'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\ToleranceMeasurement' + version
+    fourcc_BTM = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    width_BTM = xmax_BTM - xmin_BTM
+    height_BTM = ymax_BTM - ymin_BTM
+    savepath_BTM =  'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\BlinkToleranceMeasurement' + version
     if rotation_status is not None:
-        savepath = savepath + '_rotation'
-    os.makedirs(savepath)
-    frame_save = cv2.VideoWriter(savepath + '\\frame.mp4', fourcc, 30, (640, 480))
-    cutframe_save = cv2.VideoWriter(savepath + '\\cutframe.mp4', fourcc, 30, (width, height))
-    gaussian_save = cv2.VideoWriter(savepath + '\\gaussian.mp4', fourcc, 30, (width, height))
-    gray_save = cv2.VideoWriter(savepath + '\\gray.mp4', fourcc, 30, (width, height))
-    binaryeyelid_save = cv2.VideoWriter(savepath + '\\binary_eyelid.mp4', fourcc, 30, (width, height))
-    horizon_save = cv2.VideoWriter(savepath + '\\horizon.mp4', fourcc, 30, (width, height))
-    dilation_save = cv2.VideoWriter(savepath + '\\dilation.mp4', fourcc, 30, (width, height))
-    framedelta_save = cv2.VideoWriter(savepath + '\\framedelta.mp4', fourcc, 30, (width, height))
-    binaryframedelta_save = cv2.VideoWriter(savepath + '\\binary_framedelta.mp4', fourcc, 30, (width, height))
+        savepath_BTM = savepath_BTM + '_rotation'
+    os.makedirs(savepath_BTM)
+    frame_save_BTM = cv2.VideoWriter(savepath_BTM + '\\frame.mp4', fourcc_BTM, 30, (640, 480))
+    cutframe_save_BTM = cv2.VideoWriter(savepath_BTM + '\\cutframe.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
+    gaussian_save_BTM = cv2.VideoWriter(savepath_BTM + '\\gaussian.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
+    gray_save_BTM = cv2.VideoWriter(savepath_BTM + '\\gray.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
+    binaryeyelid_save_BTM = cv2.VideoWriter(savepath_BTM + '\\binary_eyelid.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
+    horizon_save_BTM = cv2.VideoWriter(savepath_BTM + '\\horizon.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
+    dilation_save_BTM = cv2.VideoWriter(savepath_BTM + '\\dilation.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
+    framedelta_save_BTM = cv2.VideoWriter(savepath_BTM + '\\framedelta.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
+    binaryframedelta_save_BTM = cv2.VideoWriter(savepath_BTM + '\\binary_framedelta.mp4', fourcc_BTM, 30, (width_BTM, height_BTM))
 
     # Paramete setting
-    basetime = time.time()
-    avg = None
-    kernel_hor = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
-    kernel_cal = np.ones((3, 3), np.uint8)
-    fonttype = cv2.FONT_HERSHEY_COMPLEX
+    basetime_BTM = time.time()
+    avg_BTM = None
+    kernel_hor_BTM = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
+    kernel_cal_BTM = np.ones((3, 3), np.uint8)
+    fonttype_BTM = cv2.FONT_HERSHEY_COMPLEX
 
     # List difinition
     x0list_TM, y0list_TM, x1list_TM, y1list_TM, timelist_TM, gradlist_TM, ratiolist_TM, degreelist_TM, radianlist_TM, tolerancetimelist_TM, endtimelist_TM = [], [], [], [], [], [], [], [], [], [], []
 
     while True:
-        ret, frame = cap.read()
+        ret, frame_BTM = cap_BTM.read()
         if not ret: break
 
         if rotation_status is not None:
-            frame = cv2.warpAffine(frame, rotation_status, (640, 480))
+            frame_BTM = cv2.warpAffine(frame_BTM, rotation_status, (640, 480))
 
-        copyframe = frame.copy()
-        cutframe = copyframe[ymin:ymax, xmin:xmax]
-        gaussian = cv2.GaussianBlur(cutframe, (5, 5), 1)
-        gray = cv2.cvtColor(gaussian, cv2.COLOR_BGR2GRAY)
+        copyframe_BTM = frame_BTM.copy()
+        cutframe_BTM = copyframe_BTM[ymin_BTM:ymax_BTM, xmin_BTM:xmax_BTM]
+        gaussian_BTM = cv2.GaussianBlur(cutframe_BTM, (5, 5), 1)
+        gray_BTM = cv2.cvtColor(gaussian_BTM, cv2.COLOR_BGR2GRAY)
 
-        binary_eyelid = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
-        horizon = cv2.filter2D(binary_eyelid, -1, kernel_hor)
-        dilation = cv2.dilate(horizon, kernel_cal, 1)
-        lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 70)
+        binary_eyelid_BTM = cv2.threshold(gray_BTM, 70, 255, cv2.THRESH_BINARY)[1]
+        horizon_BTM = cv2.filter2D(binary_eyelid_BTM, -1, kernel_hor_BTM)
+        dilation_BTM = cv2.dilate(horizon_BTM, kernel_cal_BTM, 1)
+        lines_BTM = cv2.HoughLinesP(dilation_BTM, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 70)
 
-        if avg is None:
-            avg = gray.copy().astype("float")
+        if avg_BTM is None:
+            avg_BTM = gray_BTM.copy().astype("float")
             continue
 
-        cv2.accumulateWeighted(gray, avg, 0.8)
-        framedelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
-        binary_framedelta = cv2.threshold(framedelta, 3, 255, cv2.THRESH_BINARY)[1]
-        whiteratio = (cv2.countNonZero(binary_framedelta) / (width * height)) * 100
+        cv2.accumulateWeighted(gray_BTM, avg_BTM, 0.8)
+        framedelta_BTM = cv2.absdiff(gray_BTM, cv2.convertScaleAbs(avg_BTM))
+        binary_framedelta_BTM = cv2.threshold(framedelta_BTM, 3, 255, cv2.THRESH_BINARY)[1]
+        whiteratio_BTM = (cv2.countNonZero(binary_framedelta_BTM) / (width_BTM * height_BTM)) * 100
 
-        if lines is not None:
-            x0, y0, x1, y1 = lines[0][0][0], lines[0][0][1], lines[0][0][2], lines[0][0][3]
-            x0list_TM.append(x0)
-            y0list_TM.append(y0)
-            x1list_TM.append(x1)
-            y1list_TM.append(y1)
-            gradient, degree, radian = EyelidParameterCalculation(x0list_TM, y0list_TM, x1list_TM, y1list_TM)
-            if gradient > -10:
-                gradlist_TM.append(gradient)
-                degreelist_TM.append(degree)
-                radianlist_TM.append(radian)
-                comparisontime = time.time() - basetime
+        if lines_BTM is not None:
+            for line_BTM in lines_BTM:
+                x0_BTM, y0_BTM, x1_BTM, y1_BTM = line_BTM[0]
+                x0list_TM.append(x0_BTM)
+                y0list_TM.append(y0_BTM)
+                x1list_TM.append(x1_BTM)
+                y1list_TM.append(y1_BTM)
+                gradient_BTM, degree_BTM, radian_BTM = EyelidParameterCalculation(x0list_TM, y0list_TM, x1list_TM, y1list_TM)
+            if gradient_BTM < 10 and gradient_BTM > -5:
+                gradlist_TM.append(gradient_BTM)
+                degreelist_TM.append(degree_BTM)
+                radianlist_TM.append(radian_BTM)
+                comparisontime = time.time() - basetime_BTM
                 timelist_TM.append(comparisontime)
-                ratiolist_TM.append(whiteratio)
+                ratiolist_TM.append(whiteratio_BTM)
 
-            if whiteratio > 10 and gradient > thresh_grad_low:
-                endtime = time.time() - starttime
-                tolerancetime = time.time() - basetime + interval
-                queue_finish.put(tolerancetime)
-                endtimelist_TM.append(endtime)
-                tolerancetimelist_TM.append(tolerancetime)
+            if whiteratio_BTM > 10 and gradient_BTM > thresh_grad_low_BTM:
+                endtime_BTM = time.time() - starttime_BTM
+                tolerancetime_BTM = time.time() - basetime_BTM + interval_BTM
+                endtimelist_TM.append(endtime_BTM)
+                tolerancetimelist_TM.append(tolerancetime_BTM)
                 break
 
-            else:
-                tolerancetime = time.time() - basetime + interval
-                queue_midway.put(tolerancetime)
+        tolerancetime_BTM = time.time() - basetime_BTM + interval_BTM
 
-        cv2.putText(frame, 'Tolerance time[s] : ', (10, 400), fonttype, 1, (0, 0, 255), 2)
-        cv2.putText(frame, str(tolerancetime), (150, 400), fonttype, 1, (0, 0, 255), 2)
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 255), 2)
+        cv2.putText(frame_BTM, 'Tolerance time[s] : ', (10, 400), fonttype_BTM, 1, (0, 0, 255), 2)
+        cv2.putText(frame_BTM, str(tolerancetime_BTM), (20, 450), fonttype_BTM, 1, (0, 0, 255), 2)
+        cv2.rectangle(frame_BTM, (xmin_BTM, ymin_BTM), (xmax_BTM, ymax_BTM), (0, 255, 255), 2)
 
-        cv2.imshow('Tolerance blink', frame)
+        cv2.imshow('Tolerance blink', frame_BTM)
 
-        frame_save.write(frame)
-        cutframe_save.write(cutframe)
-        gaussian_save.write(gaussian)
-        gray_save.write(cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR))
-        binaryeyelid_save.write(cv2.cvtColor(binary_eyelid, cv2.COLOR_GRAY2BGR))
-        horizon_save.write(cv2.cvtColor(horizon, cv2.COLOR_GRAY2BGR))
-        dilation_save.write(cv2.cvtColor(dilation, cv2.COLOR_GRAY2BGR))
-        framedelta_save.write(cv2.cvtColor(framedelta, cv2.COLOR_GRAY2BGR))
-        binaryframedelta_save.write(cv2.cvtColor(binary_framedelta, cv2.COLOR_GRAY2BGR))
+        frame_save_BTM.write(frame_BTM)
+        cutframe_save_BTM.write(cutframe_BTM)
+        gaussian_save_BTM.write(gaussian_BTM)
+        gray_save_BTM.write(cv2.cvtColor(gray_BTM, cv2.COLOR_GRAY2BGR))
+        binaryeyelid_save_BTM.write(cv2.cvtColor(binary_eyelid_BTM, cv2.COLOR_GRAY2BGR))
+        horizon_save_BTM.write(cv2.cvtColor(horizon_BTM, cv2.COLOR_GRAY2BGR))
+        dilation_save_BTM.write(cv2.cvtColor(dilation_BTM, cv2.COLOR_GRAY2BGR))
+        framedelta_save_BTM.write(cv2.cvtColor(framedelta_BTM, cv2.COLOR_GRAY2BGR))
+        binaryframedelta_save_BTM.write(cv2.cvtColor(binary_framedelta_BTM, cv2.COLOR_GRAY2BGR))
 
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-    cap.release()
-    frame_save.release()
-    gaussian_save.release()
-    gray_save.release()
-    binaryeyelid_save.release()
-    horizon_save.release()
-    dilation_save.release()
-    framedelta_save.release()
-    binaryframedelta_save.release()
+    cap_BTM.release()
+    frame_save_BTM.release()
+    gaussian_save_BTM.release()
+    gray_save_BTM.release()
+    binaryeyelid_save_BTM.release()
+    horizon_save_BTM.release()
+    dilation_save_BTM.release()
+    framedelta_save_BTM.release()
+    binaryframedelta_save_BTM.release()
     cv2.destroyAllWindows()
 
-    ExcelEntry_BTM(path, version, x0list_TM, y0list_TM, x1list_TM, y1list_TM, timelist_TM, gradlist_TM, ratiolist_TM, degreelist_TM, radianlist_TM, tolerancetimelist_TM)
+    ExcelEntry_BTM(path, version, x0list_TM, y0list_TM, x1list_TM, y1list_TM, timelist_TM, gradlist_TM, ratiolist_TM, degreelist_TM, radianlist_TM, tolerancetimelist_TM, endtimelist_TM)
 
 # -------------------------------------------
 
@@ -509,7 +506,7 @@ def ToleranceThread(path, version, xmin, xmax, ymin, ymax, interval, thresh_grad
 # --Rotation frame detection thread--
     
 def ExcelEntry_RFD(path, version, rotation_degree, starttime, x0list, y0list, x1list, y1list, gradlist, ratiolist, degreelist, radianlist, timelist, vallist_detec, timelist_detec, gradlist_detec, ratiolist_detec, degreelist_detec, radianlist_detec, noblinktimelist, intervallist):
-    excelpath_RFD = 'C:\\Users\\admin\\blink_data\\' + path + '\\RotationFrameDetection\\index.xlsx'
+    excelpath_RFD = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\RotationFrameDetection' + version + '\\index.xlsx'
     wb = openpyxl.Workbook()
     wb.create_sheet(version)
     ws = wb[version]
@@ -569,40 +566,40 @@ def ExcelEntry_RFD(path, version, rotation_degree, starttime, x0list, y0list, x1
     wb.save(excelpath_RFD)
     wb.close()
 
-def RotationFrameDetection(path, version, xmin, xmax, ymin, ymax, rotation_degree, starttime):
+def RotationFrameDetection(path, version, xmin_RFD, xmax_RFD, ymin_RFD, ymax_RFD, rotation_degree, starttime_RFD):
 
     # Rotation matrix calculation
     rotation_matrix = cv2.getRotationMatrix2D((320, 240), rotation_degree, 1.0)
     xmin_rotation, xmax_rotation, ymin_rotation, ymax_rotation = FrameAutoDetect(path, version, rotation_matrix)
     th_grad_high_rotation, th_grad_low_rotation, th_ratio_high_rotaion, th_ratio_low_rotation, average_degree_rotation = ThreshAutoDetection(path, version, xmin_rotation, xmax_rotation, ymin_rotation, ymax_rotation, rotation_matrix)
 
-    cap = cv2.VideoCapture(0)
+    cap_RFD = cv2.VideoCapture(0)
 
     # Video save setting
-    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-    width = xmax - xmin
-    height = ymax - ymin
-    savepath = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\RotationFrameDetection' + version
-    os.makedirs(savepath)
-    rotationframe_save = cv2.VideoWriter(savepath + '\\frame.mp4', fourcc, 30, (640, 480))
-    copyframe_save = cv2.VideoWriter(savepath + '\\copyframe.mp4', fourcc, 30, (640, 480))
-    cutframe_save = cv2.VideoWriter(savepath + '\\cutframe.mp4', fourcc, 30, (width, height))
-    gaussian_save = cv2.VideoWriter(savepath + '\\gaussian.mp4', fourcc, 30, (width, height))
-    gray_save = cv2.VideoWriter(savepath + '\\gray.mp4', fourcc, 30, (width, height))
-    binaryeyelid_save = cv2.VideoWriter(savepath + '\\binary_eyelid.mp4', fourcc, 30, (width, height))
-    horizon_save = cv2.VideoWriter(savepath + '\\horizon.mp4', fourcc, 30, (width, height))
-    dilation_save = cv2.VideoWriter(savepath + '\\dilation.mp4', fourcc, 30, (width, height))
-    framedelta_save = cv2.VideoWriter(savepath + '\\framedelta.mp4', fourcc, 30, (width, height))
-    binaryframedelta_save = cv2.VideoWriter(savepath + '\\binary_framedelta.mp4', fourcc, 30, (width, height))
+    fourcc_RFD = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    width_RFD = xmax_RFD - xmin_RFD
+    height_RFD = ymax_RFD - ymin_RFD
+    savepath_RFD = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\RotationFrameDetection' + version
+    os.makedirs(savepath_RFD)
+    rotationframe_save_RFD = cv2.VideoWriter(savepath_RFD + '\\frame.mp4', fourcc_RFD, 30, (640, 480))
+    copyframe_save_RFD = cv2.VideoWriter(savepath_RFD + '\\copyframe.mp4', fourcc_RFD, 30, (640, 480))
+    cutframe_save_RFD = cv2.VideoWriter(savepath_RFD + '\\cutframe.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
+    gaussian_save_RFD = cv2.VideoWriter(savepath_RFD + '\\gaussian.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
+    gray_save_RFD = cv2.VideoWriter(savepath_RFD + '\\gray.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
+    binaryeyelid_save_RFD = cv2.VideoWriter(savepath_RFD + '\\binary_eyelid.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
+    horizon_save_RFD = cv2.VideoWriter(savepath_RFD + '\\horizon.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
+    dilation_save_RFD = cv2.VideoWriter(savepath_RFD + '\\dilation.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
+    framedelta_save_RFD = cv2.VideoWriter(savepath_RFD + '\\framedelta.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
+    binaryframedelta_save_RFD = cv2.VideoWriter(savepath_RFD + '\\binary_framedelta.mp4', fourcc_RFD, 30, (width_RFD, height_RFD))
 
     # Parameter setting
-    basetime = time.time()
-    blinktime = time.time()
-    val = 0
-    avg = None
-    kernel_hor = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
-    kernel_cal = np.ones((3, 3), np.uint8)
-    fonttype = cv2.FONT_HERSHEY_COMPLEX
+    basetime_RFD = time.time()
+    blinktime_RFD = time.time()
+    val_RFD = 0
+    avg_RFD = None
+    kernel_hor_RFD = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
+    kernel_cal_RFD = np.ones((3, 3), np.uint8)
+    fonttype_RFD = cv2.FONT_HERSHEY_COMPLEX
 
     # List difinition
     x0list_RFD, y0list_RFD, x1list_RFD, y1list_RFD, gradlist_RFD, ratiolist_RFD, timelist_RFD, degreelist_RFD, radianlist_RFD = [], [], [], [], [], [], [], [], []
@@ -610,145 +607,146 @@ def RotationFrameDetection(path, version, xmin, xmax, ymin, ymax, rotation_degre
     noblinktimelist_RFD, intervallist_RFD = [], []
 
     while True:
-        ret, frame = cap.read()
+        ret, frame_RFD = cap_RFD.read()
         if not ret: break
 
-        rotationframe = cv2.warpAffine(frame, rotation_matrix, (640, 480))
-        copyframe = rotationframe.copy()
-        cutframe = rotationframe[ymin_rotation:ymax_rotation, xmin_rotation:xmax_rotation]
-        gaussian = cv2.GaussianBlur(cutframe, (5, 5), 1)
-        gray = cv2.cvtColor(gaussian, cv2.COLOR_BGR2GRAY)
+        rotationframe_RFD = cv2.warpAffine(frame_RFD, rotation_matrix, (640, 480))
+        copyframe_RFd = rotationframe_RFD.copy()
+        cutframe_RFD = rotationframe_RFD[ymin_rotation:ymax_rotation, xmin_rotation:xmax_rotation]
+        gaussian_RFD = cv2.GaussianBlur(cutframe_RFD, (5, 5), 1)
+        gray_RFD = cv2.cvtColor(gaussian_RFD, cv2.COLOR_BGR2GRAY)
 
-        binary_eyelid = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
-        horizon = cv2.filter2D(binary_eyelid, -1, kernel_hor)
-        dilation = cv2.dilate(horizon, kernel_cal, iterations = 1)
-        lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 30)
+        binary_eyelid_RFD = cv2.threshold(gray_RFD, 70, 255, cv2.THRESH_BINARY)[1]
+        horizon_RFD = cv2.filter2D(binary_eyelid_RFD, -1, kernel_hor_RFD)
+        dilation_RFD = cv2.dilate(horizon_RFD, kernel_cal_RFD, iterations = 1)
+        lines_RFD = cv2.HoughLinesP(dilation_RFD, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 30)
 
-        if avg is None:
-            avg = gray.copy().astype("float")
+        if avg_RFD is None:
+            avg_RFD = gray_RFD.copy().astype("float")
             continue
 
-        cv2.accumulateWeighted(gray, avg, 0.8)
-        framedelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
-        binary_framedelta = cv2.threshold(framedelta, 3, 255, cv2.THRESH_BINARY)[1]
-        whiteratio = (cv2.countNonZero(binary_framedelta) / (width * height)) * 100
+        cv2.accumulateWeighted(gray_RFD, avg_RFD, 0.8)
+        framedelta_RFD = cv2.absdiff(gray_RFD, cv2.convertScaleAbs(avg_RFD))
+        binary_framedelta_RFD = cv2.threshold(framedelta_RFD, 3, 255, cv2.THRESH_BINARY)[1]
+        whiteratio_RFD = (cv2.countNonZero(binary_framedelta_RFD) / (width_RFD * height_RFD)) * 100
 
-        if lines is not None:
-            x0, y0, x1, y1 = lines[0][0][0], lines[0][0][1], lines[0][0][2], lines[0][0][3]
-            delta_Y = y1 - y0
-            delta_X = x1 - x0
-            grad = 10 * (delta_Y / delta_X)
-            if grad > -10 and grad < 8:
-                x0list_RFD.append(x0)
-                y0list_RFD.append(y0)
-                x1list_RFD.append(x1)
-                y1list_RFD.append(y1)
-                gradient, degree, radian = EyelidParameterCalculation(x0list_RFD, y0list_RFD, x1list_RFD, y1list_RFD)
-                gradlist_RFD.append(gradient)
-                ratiolist_RFD.append(whiteratio)
-                comparison_time = time.time() - basetime
-                timelist_RFD.append(comparison_time)
-                degreelist_RFD.append(degree)
-                radianlist_RFD.append(radian)
-                cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 2)
+        if lines_RFD is not None:
+            for line_RFD in lines_RFD:
+                x0_RFD, y0_RFD, x1_RFD, y1_RFD = line_RFD[0]
+                delta_Y_RFD = y1_RFD - y0_RFD
+                delta_X_RFD = x1_RFD - x0_RFD
+                grad_RFD = 10 * (delta_Y_RFD / delta_X_RFD)
+            if grad_RFD > -10 and grad_RFD < 8:
+                x0list_RFD.append(x0_RFD)
+                y0list_RFD.append(y0_RFD)
+                x1list_RFD.append(x1_RFD)
+                y1list_RFD.append(y1_RFD)
+                gradient_RFD, degree_RFD, radian_RFD = EyelidParameterCalculation(x0list_RFD, y0list_RFD, x1list_RFD, y1list_RFD)
+                gradlist_RFD.append(gradient_RFD)
+                ratiolist_RFD.append(whiteratio_RFD)
+                comparison_time_RFD = time.time() - basetime_RFD
+                timelist_RFD.append(comparison_time_RFD)
+                degreelist_RFD.append(degree_RFD)
+                radianlist_RFD.append(radian_RFD)
+                cv2.line(cutframe_RFD, (x0_RFD, y0_RFD), (x1_RFD, y1_RFD), (255, 255, 0), 2)
 
-        if gradient < th_grad_high_rotation and gradient > th_grad_low_rotation:
-            timediff = time.time() - blinktime
-            if timediff > 0.2:
-                if whiteratio < th_ratio_high_rotaion and whiteratio > th_ratio_low_rotation:
-                    val += 1
-                    blinktime = time.time()
-                    detectiontime = starttime + (time.time() - basetime)
-                    vallist_detec_RFD.append(val)
+        if gradient_RFD < th_grad_high_rotation and gradient_RFD > th_grad_low_rotation:
+            timediff_RFD = time.time() - blinktime_RFD
+            if timediff_RFD > 0.2:
+                if whiteratio_RFD < th_ratio_high_rotaion and whiteratio_RFD > th_ratio_low_rotation:
+                    val_RFD += 1
+                    blinktime_RFD = time.time()
+                    detectiontime = starttime_RFD + (time.time() - basetime_RFD)
+                    vallist_detec_RFD.append(val_RFD)
                     timelist_detec_RFD.append(detectiontime)
-                    gradlist_detec_RFD.append(gradient)
-                    ratiolist_detec_RFD.append(whiteratio)
-                    degreelist_detec_RFD.append(degree)
-                    radianlist_detec_RFD.append(radian)
-                    interval = 0
+                    gradlist_detec_RFD.append(gradient_RFD)
+                    ratiolist_detec_RFD.append(whiteratio_RFD)
+                    degreelist_detec_RFD.append(degree_RFD)
+                    radianlist_detec_RFD.append(radian_RFD)
+                    interval_RFD = 0
 
                 else: 
-                    noblinktime = starttime + (time.time() - basetime)
-                    interval = time.time() - blinktime
+                    noblinktime = starttime_RFD + (time.time() - basetime_RFD)
+                    interval_RFD = time.time() - blinktime_RFD
                     noblinktimelist_RFD.append(noblinktime)
-                    intervallist_RFD.append(interval)
+                    intervallist_RFD.append(interval_RFD)
                     indexW = ratiolist_RFD[-2]
                     indexV = ratiolist_RFD[-3]
 
                     if indexW < th_ratio_high_rotaion and indexW > th_ratio_low_rotation:
-                        val += 1
-                        blinktime = time.time()
-                        detectiontime = starttime + (time.time() - basetime)
-                        vallist_detec_RFD.append(val)
+                        val_RFD += 1
+                        blinktime_RFD = time.time()
+                        detectiontime = starttime_RFD + (time.time() - basetime_RFD)
+                        vallist_detec_RFD.append(val_RFD)
                         timelist_detec_RFD.append(detectiontime)
-                        gradlist_detec_RFD.append(gradient)
-                        ratiolist_detec_RFD.append(whiteratio)
-                        degreelist_detec_RFD.append(degree)
-                        radianlist_detec_RFD.append(radian)
-                        interval = 0
+                        gradlist_detec_RFD.append(gradient_RFD)
+                        ratiolist_detec_RFD.append(whiteratio_RFD)
+                        degreelist_detec_RFD.append(degree_RFD)
+                        radianlist_detec_RFD.append(radian_RFD)
+                        interval_RFD = 0
 
                     else:
-                        noblinktime = starttime + (time.time() - basetime)
-                        interval = time.time() - blinktime
+                        noblinktime = starttime_RFD + (time.time() - basetime_RFD)
+                        interval_RFD = time.time() - blinktime_RFD
                         noblinktimelist_RFD.append(noblinktime)
-                        intervallist_RFD.append(interval)
+                        intervallist_RFD.append(interval_RFD)
 
                         if indexV < th_ratio_high_rotaion and indexV > th_ratio_low_rotation:
-                            val += 1
-                            blinktime = time.time()
-                            detectiontime = starttime + (time.time() - basetime)
-                            vallist_detec_RFD.append(val)
+                            val_RFD += 1
+                            blinktime_RFD = time.time()
+                            detectiontime = starttime_RFD + (time.time() - basetime_RFD)
+                            vallist_detec_RFD.append(val_RFD)
                             timelist_detec_RFD.append(detectiontime)
-                            gradlist_detec_RFD.append(gradient)
-                            ratiolist_detec_RFD.append(whiteratio)
-                            degreelist_detec_RFD.append(degree)
-                            radianlist_detec_RFD.append(radian)
-                            interval = 0
+                            gradlist_detec_RFD.append(gradient_RFD)
+                            ratiolist_detec_RFD.append(whiteratio_RFD)
+                            degreelist_detec_RFD.append(degree_RFD)
+                            radianlist_detec_RFD.append(radian_RFD)
+                            interval_RFD = 0
 
                         else:
-                            noblinktime = starttime + (time.time() - basetime)
-                            interval = time.time() - blinktime
+                            noblinktime = starttime_RFD + (time.time() - basetime_RFD)
+                            interval_RFD = time.time() - blinktime_RFD
                             noblinktimelist_RFD.append(noblinktime)
-                            intervallist_RFD.append(interval)
+                            intervallist_RFD.append(interval_RFD)
 
-        runtime = starttime + (time.time() - basetime)
+        runtime_RFD = starttime_RFD + (time.time() - basetime_RFD)
 
-        cv2.rectangle(copyframe, (xmin_rotation, ymin_rotation), (xmax_rotation, ymax_rotation), (0, 255, 0), 2)
-        cv2.putText(rotationframe, 'Count:', (10, 350), fonttype, 1, (0, 0, 255), 2)
-        cv2.putText(rotationframe, str(val), (150, 350), fonttype, 1, (0, 0, 255), 2)
+        cv2.rectangle(copyframe_RFd, (xmin_rotation, ymin_rotation), (xmax_rotation, ymax_rotation), (0, 255, 0), 2)
+        cv2.putText(rotationframe_RFD, 'Count:', (10, 350), fonttype_RFD, 1, (0, 0, 255), 2)
+        cv2.putText(rotationframe_RFD, str(val_RFD), (150, 350), fonttype_RFD, 1, (0, 0, 255), 2)
 
-        cv2.imshow('Frame (rotation)', rotationframe)
+        cv2.imshow('Frame (rotation)', rotationframe_RFD)
 
-        rotationframe_save.write(rotationframe)
-        copyframe_save.write(copyframe)
-        cutframe_save.write(cutframe)
-        gaussian_save.write(gaussian)
-        gray_save.write(cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR))
-        binaryeyelid_save.write(cv2.cvtColor(binary_eyelid, cv2.COLOR_GRAY2BGR))
-        horizon_save.write(cv2.cvtColor(horizon, cv2.COLOR_GRAY2BGR))
-        dilation_save.write(cv2.cvtColor(dilation, cv2.COLOR_GRAY2BGR))
-        framedelta_save.write(cv2.cvtColor(framedelta, cv2.COLOR_GRAY2BGR))
-        binaryframedelta_save.write(cv2.cvtColor(binary_framedelta, cv2.COLOR_GRAY2BGR))
+        rotationframe_save_RFD.write(rotationframe_RFD)
+        copyframe_save_RFD.write(copyframe_RFd)
+        cutframe_save_RFD.write(cutframe_RFD)
+        gaussian_save_RFD.write(gaussian_RFD)
+        gray_save_RFD.write(cv2.cvtColor(gray_RFD, cv2.COLOR_GRAY2BGR))
+        binaryeyelid_save_RFD.write(cv2.cvtColor(binary_eyelid_RFD, cv2.COLOR_GRAY2BGR))
+        horizon_save_RFD.write(cv2.cvtColor(horizon_RFD, cv2.COLOR_GRAY2BGR))
+        dilation_save_RFD.write(cv2.cvtColor(dilation_RFD, cv2.COLOR_GRAY2BGR))
+        framedelta_save_RFD.write(cv2.cvtColor(framedelta_RFD, cv2.COLOR_GRAY2BGR))
+        binaryframedelta_save_RFD.write(cv2.cvtColor(binary_framedelta_RFD, cv2.COLOR_GRAY2BGR))
 
-        if interval > 60: break
+        if interval_RFD > 60: break
 
-        if runtime > 900: break
+        if runtime_RFD > 900: break
         
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-    cap.release()
-    rotationframe_save.release()
-    copyframe_save.release()
-    cutframe_save.release()
-    gaussian_save.release()
-    gray_save.release()
-    binaryeyelid_save.release()
-    horizon_save.release()
-    dilation_save.release()
-    framedelta_save.release()
-    binaryframedelta_save.release()
+    cap_RFD.release()
+    rotationframe_save_RFD.release()
+    copyframe_save_RFD.release()
+    cutframe_save_RFD.release()
+    gaussian_save_RFD.release()
+    gray_save_RFD.release()
+    binaryeyelid_save_RFD.release()
+    horizon_save_RFD.release()
+    dilation_save_RFD.release()
+    framedelta_save_RFD.release()
+    binaryframedelta_save_RFD.release()
 
-    ExcelEntry_RFD(path, version, rotation_degree, starttime, x0list_RFD, y0list_RFD, x1list_RFD, y1list_RFD, gradlist_RFD, ratiolist_RFD, degreelist_RFD, radianlist_RFD, timelist_RFD, vallist_detec_RFD, timelist_detec_RFD, gradlist_detec_RFD, ratiolist_detec_RFD, degreelist_detec_RFD, radianlist_detec_RFD, noblinktimelist_RFD, intervallist_RFD)
+    ExcelEntry_RFD(path, version, rotation_degree, starttime_RFD, x0list_RFD, y0list_RFD, x1list_RFD, y1list_RFD, gradlist_RFD, ratiolist_RFD, degreelist_RFD, radianlist_RFD, timelist_RFD, vallist_detec_RFD, timelist_detec_RFD, gradlist_detec_RFD, ratiolist_detec_RFD, degreelist_detec_RFD, radianlist_detec_RFD, noblinktimelist_RFD, intervallist_RFD)
 
 # -----------------------------------
 
@@ -757,7 +755,7 @@ def RotationFrameDetection(path, version, xmin, xmax, ymin, ymax, rotation_degre
 # --main loop--
     
 def ExcelEntry_main(path, version, x0list, y0list, x1list, y1list, timelist, gradlist, degreelist, radianlist, ratiolist, vallist_detec, timelist_detec, gradlist_detec, degreelist_detec, radianlist_detec, ratiolist_detec, noblinktimelist, intervallist, stopblinkdegree, tolerancetimelist):
-    excelpath_main = 'C:\\Users\\admin\\blink_data\\' + path + '\\main_detection\\index.xlsx'
+    excelpath_main = 'C:\\Users\\admin\\Desktop\\blink_data\\' + path + '\\main_detection' + version + '\\index.xlsx'
     wb = openpyxl.Workbook()
     wb.create_sheet(version)
     ws = wb[version]
@@ -828,7 +826,7 @@ def ExcelEntry_main(path, version, x0list, y0list, x1list, y1list, timelist, gra
     wb.close()
 
 def main():
-    date = time.strftime('%m%d')
+    date = time.strftime('%m%d_%H%M%S')
     times = time.strftime('%H%M%S')
     xmin, xmax, ymin, ymax = FrameAutoDetect(date, times, None)
     grad_high, grad_low, ratio_high, ratio_low, ave_degree_TAD = ThreshAutoDetection(date, times, xmin, xmax, ymin, ymax, None)
@@ -836,7 +834,7 @@ def main():
     cap = cv2.VideoCapture(0)
 
     # Video save setting
-    fourcc = cv2.VideoWriter_foucc('m', 'p', '4', 'v')
+    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     width = xmax - xmin
     height = ymax - ymin
     savepath = 'C:\\Users\\admin\\Desktop\\blink_data\\' + date + '\\main_detection' + times
@@ -854,19 +852,22 @@ def main():
 
     # Parameter setting
     basetime = time.time()
-    blinktime = time.time()
+    blinktime = 0
     val = 0
+    interval = 0
     avg = None
     kernel_hor = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
     kernel_cal = np.ones((3, 3), np.uint8)
     fonttype = cv2.FONT_HERSHEY_COMPLEX
 
     # List difinition
-    x0list_main, y0list_main, x1list_main, y1list_main, gradlist_main, ratiolist_main, timelist_main, degreelist_main, radianlist_main = [], [], [], [], [], [], [], [], []
+    x0list_main, y0list_main, x1list_main, y1list_main, gradlist_main, ratiolist_main, timelist_main, degreelist_main, radianlist_main = [], [], [], [], [], [0, 0], [], [], []
     vallist_detec_main, timelist_detec_main, gradlist_detec_main, ratiolist_detec_main, degreelist_detec_main, radianlist_detec_main = [], [], [], [], [], []
     noblinktimelist_main, intervallist_main = [], []
     stopblink_degree_main = []
     tolerancetimelist_main = []
+    noblinktimelist_detect, tolerancetimelist_detect = [], []
+    comparison_time, comparison_gradient, comparison_degree, comparison_ratio = [], [], [], [0, 0]
 
     while True:
         ret, frame = cap.read()
@@ -882,6 +883,28 @@ def main():
         dilation = cv2.dilate(horizon, kernel_cal, iterations = 1)
         lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 30)
 
+        if lines is not None:
+            for line in lines:
+                x0, y0, x1, y1 = line[0]
+                gradient, degree, radian = EyelidParameterCalculation(x0, y0, x1, y1)
+            if gradient > -5 and gradient < 10:
+                x0list_main.append(x0)
+                y0list_main.append(y0)
+                x1list_main.append(x1)
+                y1list_main.append(y1)
+                gradlist_main.append(gradient)
+                caltime = time.time() - basetime
+                timelist_main.append(caltime)
+                degreelist_main.append(degree)
+                radianlist_main.append(radian)
+                cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 2)
+
+        else:
+            comparison_time.append(False)
+            comparison_gradient.append(False)
+            comparison_degree.append(False)
+            comparison_ratio.append(False)
+
         if avg is None:
             avg = gray.copy().astype("float")
             continue
@@ -890,27 +913,15 @@ def main():
         framedelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
         binary_framedelta = cv2.threshold(framedelta, 3, 255, cv2.THRESH_BINARY)[1]
         whiteratio = (cv2.countNonZero(binary_framedelta) / (width * height)) * 100
+        
+        if whiteratio == 0:
+            stopblink_degree_main.append(degree)
 
-        if lines is not None:
-            x0, y0, x1, y1 = lines[0][0][0], lines[0][0][1], lines[0][0][2], lines[0][0][3]
-            delta_Y = y1 - y0
-            delta_X = x1 - x0
-            grad = 10 * (delta_Y / delta_X)
-            if grad > -10 and grad < 8:
-                x0list_main.append(x0)
-                y0list_main.append(y0)
-                x1list_main.append(x1)
-                y1list_main.append(y1)
-                gradient, degree, radian = EyelidParameterCalculation(x0list_main, y0list_main, x1list_main, y1list_main)
-                gradlist_main.append(gradient)
-                ratiolist_main.append(whiteratio)
-                comparison_time = time.time() - basetime
-                timelist_main.append(comparison_time)
-                degreelist_main.append(degree)
-                radianlist_main.append(radian)
-                cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 2)
-                if whiteratio == 0:
-                    stopblink_degree_main.append(degree)
+        comp_time = time.time() - basetime
+        comparison_time.append(comp_time)
+        comparison_gradient.append(gradient)
+        comparison_degree.append(degree)
+        comparison_ratio.append(whiteratio)
 
         if gradient < grad_high and gradient > grad_low:
             timediff = time.time() - blinktime
@@ -932,8 +943,8 @@ def main():
                     interval = time.time() - blinktime
                     noblinktimelist_main.append(noblinktime)
                     intervallist_main.append(interval)
-                    indexW = ratiolist_main[-2]
-                    indexV = ratiolist_main[-3]
+                    indexW = comparison_ratio[-2]
+                    indexV = comparison_ratio[-3]
 
                     if indexW < ratio_high and indexW > ratio_low:
                         val += 1
@@ -970,45 +981,30 @@ def main():
                             interval = time.time() - blinktime
                             noblinktimelist_main.append(noblinktime)
                             intervallist_main.append(interval)
-        if interval > 2:
-            past_ave_ratio = sum(ratiolist_main[-5:]) / 5
-            if past_ave_ratio < 5:
-                version = time.strftime('%H%M%S')
-                starttime = time.time()
-                midway_queue = Queue()
-                finish_queue = Queue()
-                timer_thread = threading.Thread(target = ToleranceThread, name = 'Tolerance measurement', args = (date, version, xmin, xmax, ymin, ymax, interval, grad_low, starttime, None, finish_queue))
-                timer_thread.start()
 
-                midway_tolerancetime = midway_queue.get()
-                cv2.putText(frame, 'tolerance time : ', (10, 200), fonttype, 1, (255, 255, 0), 2)
-                cv2.putText(frame, str(midway_tolerancetime), (160, 200), fonttype, 1, (255, 255, 0), 2)
+            if interval > 2:
+                past_ave_ratio = sum(comparison_ratio[-3:]) / 3
+                if past_ave_ratio < 5:
+                    noblinktime = time.time() - basetime
+                    interval = time.time() - blinktime
+                    noblinktimelist_detect.append(noblinktime)
+                    tolerancetimelist_detect.append(interval)
 
-                timer_thread.join()
-
-                finish_tolerancetime = finish_queue.get()
-                
-                tolerancetimelist_main.append(finish_tolerancetime)
-
-                print('Tolerance time : ', finish_tolerancetime)
-
-            elif interval > 30:
-                version = time.strftime('%H%M%S')
-                starttime = time.time()
+            if interval > 30:
+                version_rotation = time.strftime('%H%M%S')
+                starttime_rotation = time.time()
                 ave_degree_main = sum(stopblink_degree_main) / len(stopblink_degree_main)
                 rotation_degree = ave_degree_main - ave_degree_TAD
-                rotation_thread = threading.Thread(target = RotationFrameDetection, name = 'Rotaion frame measurement', args = (date, version, xmin, xmax, ymin, ymax, rotation_degree, starttime))
-                rotation_thread.start()
-
-                rotation_thread.join()
 
                 break
 
         runtime = time.time() - basetime
 
         cv2.rectangle(copyframe, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
-        cv2.putText(frame, 'count : ', (10, 350), (0, 0, 255), 2)
-        cv2.putText(frame, str(val), (150, 350), (0, 0, 255), 2)
+        cv2.putText(frame, 'count : ', (10, 350), fonttype, 1, (0, 0, 255), 2)
+        cv2.putText(frame, str(val), (150, 350), fonttype, 1, (0, 0, 255), 2)
+        cv2.putText(frame, 'time : ', (10, 100), fonttype, 1, (0, 0, 255), 2)
+        cv2.putText(frame, str(interval), (100, 100), fonttype, 1, (0, 0, 255), 2)
 
         cv2.imshow('Frame', frame)
 
@@ -1039,7 +1035,12 @@ def main():
     binaryframedelta_save.release()
     cv2.destroyAllWindows()
 
+    return version_rotation, starttime_rotation, rotation_degree
+
 # -------------
     
 if __name__ == '__main__':
-    main()
+    while True:
+
+        main()
+
