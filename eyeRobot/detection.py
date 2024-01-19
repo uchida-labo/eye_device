@@ -5,10 +5,14 @@ import numpy as np
 xlist_FAD, ylist_FAD, wlist_FAD, hlist_FAD, timelist_FAD = [], [], [], [], []
 x0list_TAD, y0list_TAD, x1list_TAD, y1list_TAD, timelist_TAD, gradlist_TAD, ratiolist_TAD, degreelist_TAD, radianlist_TAD, stopblinktime_TAD, stopblinkdegree_TAD = [], [], [], [], [], [], [], [], [], [], []
 x0list_main, y0list_main, x1list_main, y1list_main, timelist_main, gradlist_main, degreelist_main, radianlist_main, ratiolist_main = [], [], [], [], [], [], [], [], []
-comparison_time, comparison_gradient, comparison_degree, comparison_ratio = [], [], [], []
+comparison_time, comparison_gradient, comparison_degree, comparison_ratio = [0, 0], [0, 0], [0, 0], [0, 0]
 vallist_detec_main, timelist_detec_main, gradlist_detec_main, degreelist_detec_main, radianlist_detec_main, ratiolist_detec_main = [], [], [], [], [], []
 stopblink_time_main, stopblink_degree_main, noblinktimelist_main, intervallist_main = [], [], [], []
 noblinktimelist_detect, tolerancetimelist_detect = [], []
+timelist_threshcalculation_interval20, ratiolist_threshcalculation_interval20, gradlist_threshcalculation_interval20, degreelist_threshcalculation_interval20 = [], [], [], []
+timelist_threshcalculation_interval40, ratiolist_threshcalculation_interval40, gradlist_threshcalculation_interval40, degreelist_threshcalculation_interval40 = [], [], [], []
+starttimerotaionlist_interval20, maxlist_ratio_interval20, maxlist_grad_interval20, maxlist_degree_interval20, degreedifflist_interval20 = [], [], [], [], []
+starttimerotaionlist_interval40, maxlist_ratio_interval40, maxlist_grad_interval40, maxlist_degree_interval40, degreedifflist_interval40 = [], [], [], [], []
 
 date = time.strftime('%m%d_%H%M%S')
 
@@ -21,10 +25,10 @@ def ExcelEntry_FAD(savepath):
     wb.create_sheet(date)
     ws = wb[date]
 
-    dispersion_xmin = 60
-    dispersion_xmax = 60
-    dispersion_ymin = 60
-    dispersion_ymax = 60
+    dispersion_xmin = 20
+    dispersion_xmax = 50
+    dispersion_ymin = 80
+    dispersion_ymax = 80
 
     ws['C3'] = 'time'
     ws['D3'] = 'x'
@@ -186,7 +190,7 @@ def ExcelEntry_TAD(savepath):
     ws['O6'] = 'time'
     ws['P6'] = 'stop blink degree'
 
-    ws['R4'] = 'average degree (stop blink) : ' + str(average_degree)
+    ws['P4'] = 'average degree (stop blink) : ' + str(average_degree)
 
     for i0 in range(0, len(x0list_TAD)):
         ws.cell(i0 + 7, 4, x0list_TAD[i0])
@@ -272,14 +276,18 @@ def ThreshAutoDetection(xmin, xmax, ymin, ymax):
             blinktime = time.time()
             ratiolist_TAD.append(whiteratio)
 
-        binary_eyelid = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
+        binary_eyelid = cv2.threshold(gray, 95, 255, cv2.THRESH_BINARY)[1]
         horizon = cv2.filter2D(binary_eyelid, -1, kernel_hor)
         dilation = cv2.dilate(horizon, kernel_cal, iterations = 1)
-        lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 30)
+        lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 130, minLineLength = 130, maxLineGap = 100)
         if lines is not None:
             for line in lines:
                 x0, y0, x1, y1 = line[0]
                 gradient, degree, radian = EyelidParameterCalculation(x0, y0, x1, y1)
+                if y0 > y1:
+                    degree = degree * (-1)
+
+
             if gradient< 10 and gradient > -5 and x1 < (xmax - 20):
                 x0list_TAD.append(x0)
                 y0list_TAD.append(y0)
@@ -345,9 +353,17 @@ def ThreshAutoDetection(xmin, xmax, ymin, ymax):
 
 def ExcelEntry_main(savepath):
     excelpath_main = savepath + '\\index_main.xlsx'
+    sheetname_rotation = 'rotation'
+    sheetname_alldata = 'all data'
+
     wb = openpyxl.Workbook()
     wb.create_sheet(date)
+    wb.create_sheet(sheetname_rotation)
+    wb.create_sheet(sheetname_alldata)
+
     ws = wb[date]
+    ws_r = wb[sheetname_rotation]
+    ws_a = wb[sheetname_alldata]
 
     average_stopblink_degree = sum(stopblink_degree_main) / len(stopblink_degree_main)
 
@@ -368,7 +384,7 @@ def ExcelEntry_main(savepath):
     ws['O3'] = 'time'
     ws['P3'] = 'stop blink degree'
 
-    ws['R2'] = 'detections'
+    ws['S2'] = 'detections'
     ws['S3'] = 'count'
     ws['T3'] = 'time'
     ws['U3'] = 'gradient'
@@ -377,11 +393,44 @@ def ExcelEntry_main(savepath):
     ws['X3'] = 'whiteratio'
 
     ws['Z2'] = 'no blinks'
-    ws['AA3'] = 'time'
-    ws['AB3'] = 'interval'
+    ws['Z3'] = 'time'
+    ws['AA3'] = 'interval'
 
-    ws['AD3'] = 'time'
-    ws['AE3'] = 'tolerance time'
+    ws['AC3'] = 'time'
+    ws['AD3'] = 'tolerance time'
+
+    ws_r['D2'] = 'thresh calculation for interval 20'
+    ws_r['D3'] = 'time'
+    ws_r['E4'] = 'whiteratio'
+    ws_r['F3'] = 'gradient'
+    ws_r['G3'] = 'degree'
+
+    ws_r['I2'] = 'thresh calculation for interval 40'
+    ws_r['I3'] = 'time'
+    ws_r['J3'] = 'whiteratio'
+    ws_r['K3'] = 'gradient'
+    ws_r['L3'] = 'degree'
+
+    ws_r['N1'] = 'dispersion = ratio(+4, -10), grad(+2, -1)'
+    ws_r['N2'] = 'max values in interval > 20'
+    ws_r['N3'] = 'time'
+    ws_r['O3'] = 'whiteratio'
+    ws_r['P3'] = 'gradient'
+    ws_r['Q3'] = 'degree'
+    ws_r['R3'] = 'degree diff'
+
+    ws_r['T2'] = 'max values in interval > 40'
+    ws_r['T3'] = 'time'
+    ws_r['U3'] = 'whiteratio'
+    ws_r['V3'] = 'gradient'
+    ws_r['W3'] = 'degree'
+    ws_r['X3'] = 'degree diff'
+
+    ws_a['D3'] = 'time'
+    ws_a['E3'] = 'whiteratio'
+    ws_a['F3'] = 'gradient'
+    ws_a['G3'] = 'degree'
+
 
     for i0 in range(0, len(x0list_main)):
         ws.cell(i0 + 4, 4, x0list_main[i0])
@@ -392,29 +441,59 @@ def ExcelEntry_main(savepath):
         ws.cell(i0 + 4, 10, gradlist_main[i0])
         ws.cell(i0 + 4, 11, degreelist_main[i0])
         ws.cell(i0 + 4, 12, radianlist_main[i0])
+        ws.cell(i0 + 4, 13, ratiolist_main[i0])
 
-    for i1 in range(0, len(ratiolist_main)):
-        ws.cell(i1 + 4, 13, ratiolist_main[i1])
+    for i1 in range(0, len(stopblink_time_main)):
+        ws.cell(i1 + 4, 15, stopblink_time_main[i1])
+        ws.cell(i1 + 4, 16, stopblink_degree_main[i1])
 
-    for i2 in range(0, len(stopblink_time_main)):
-        ws.cell(i2 + 4, 15, stopblink_time_main[i2])
-        ws.cell(i2 + 4, 16, stopblink_degree_main[i2])
+    for i2 in range(0, len(vallist_detec_main)):
+        ws.cell(i2 + 4, 19, vallist_detec_main[i2])
+        ws.cell(i2 + 4, 20, timelist_detec_main[i2])
+        ws.cell(i2 + 4, 21, gradlist_detec_main[i2])
+        ws.cell(i2 + 4, 22, degreelist_detec_main[i2])
+        ws.cell(i2 + 4, 23, radianlist_detec_main[i2])
+        ws.cell(i2 + 4, 24, ratiolist_detec_main[i2])
 
-    for i3 in range(0, len(vallist_detec_main)):
-        ws.cell(i3 + 4, 18, vallist_detec_main[i3])
-        ws.cell(i3 + 4, 19, timelist_detec_main[i3])
-        ws.cell(i3 + 4, 20, gradlist_detec_main[i3])
-        ws.cell(i3 + 4, 21, degreelist_detec_main[i3])
-        ws.cell(i3 + 4, 22, radianlist_detec_main[i3])
-        ws.cell(i3 + 4, 23, ratiolist_detec_main[i3])
+    for i3 in range(0, len(noblinktimelist_main)):
+        ws.cell(i3 + 4, 26, noblinktimelist_main[i3])
+        ws.cell(i3 + 4, 27, intervallist_main[i3])
 
-    for i4 in range(0, len(noblinktimelist_main)):
-        ws.cell(i4 + 4, 25, noblinktimelist_main[i4])
-        ws.cell(i4 + 4, 26, intervallist_main[i4])
+    for i4 in range(0, len(tolerancetimelist_detect)):
+        ws.cell(i4 + 4, 29, noblinktimelist_detect[i4])
+        ws.cell(i4 + 4, 30, tolerancetimelist_detect[i4])
 
-    for i5 in range(0, len(tolerancetimelist_detect)):
-        ws.cell(i5 + 4, 28, noblinktimelist_detect[i5])
-        ws.cell(i5 + 4, 29, tolerancetimelist_detect[i5])
+    for i5 in range(0, len(timelist_threshcalculation_interval20)):
+        ws_r.cell(i5 + 4, 4, timelist_threshcalculation_interval20[i5])
+        ws_r.cell(i5 + 4, 5, ratiolist_threshcalculation_interval20[i5])
+        ws_r.cell(i5 + 4, 6, gradlist_threshcalculation_interval20[i5])
+        ws_r.cell(i5 + 4, 7, degreelist_threshcalculation_interval20[i5])
+
+    for i6 in range(0, len(timelist_threshcalculation_interval40)):
+        ws_r.cell(i6 + 4, 9, timelist_threshcalculation_interval20[i6])
+        ws_r.cell(i6 + 4, 10, ratiolist_threshcalculation_interval20[i6])
+        ws_r.cell(i6 + 4, 11, gradlist_threshcalculation_interval20[i6])
+        ws_r.cell(i6 + 4, 12, degreelist_threshcalculation_interval20[i6])
+
+    for i7 in range(0, len(starttimerotaionlist_interval20)):
+        ws_r.cell(i7 + 4, 14, starttimerotaionlist_interval20[i7])
+        ws_r.cell(i7 + 4, 15, maxlist_ratio_interval20[i7])
+        ws_r.cell(i7 + 4, 16, maxlist_grad_interval20[i7])
+        ws_r.cell(i7 + 4, 17, maxlist_degree_interval20[i7])
+        ws_r.cell(i7 + 4, 18, degreedifflist_interval20[i7])
+
+    for i8 in range(0, len(starttimerotaionlist_interval40)):
+        ws_r.cell(i8 + 4, 20, starttimerotaionlist_interval40[i8])
+        ws_r.cell(i8 + 4, 21, maxlist_ratio_interval40[i8])
+        ws_r.cell(i8 + 4, 22, maxlist_grad_interval40[i8])
+        ws_r.cell(i8 + 4, 23, maxlist_degree_interval40[i8])
+        ws_r.cell(i8 + 4, 24, degreedifflist_interval40[i8])
+
+    for i9 in range(0, len(comparison_time)):
+        ws_a.cell(i9 + 4, 4, comparison_time[i9])
+        ws_a.cell(i9 + 4, 5, comparison_ratio[i9])
+        ws_a.cell(i9 + 4, 6, comparison_gradient[i9])
+        ws_a.cell(i9 + 4, 7, comparison_degree[i9])
 
     wb.save(excelpath_main)
     wb.close()
@@ -429,7 +508,6 @@ def ListAppendForMain(val ,detectiontime, gradient, whiteratio, degree, radian):
 
 def main():
     date = time.strftime('%m%d_%H%M%S')
-    times = time.strftime('%H%M%S')
     xmin, xmax, ymin, ymax = FrameAutoDetect()
     grad_high, grad_low, ratio_high, ratio_low, ave_degree_TAD = ThreshAutoDetection(xmin, xmax, ymin, ymax)
 
@@ -459,7 +537,7 @@ def main():
     interval = 0
     avg = None
     rotation_flag = 1
-    rotation_degree = 0
+    degree_diff = 0
     kernel_hor = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
     kernel_cal = np.ones((3, 3), np.uint8)
     fonttype = cv2.FONT_HERSHEY_COMPLEX
@@ -470,12 +548,11 @@ def main():
         ret, frame = cap.read()
         if not ret: break
 
-        if rotation_degree > 0:
+        if degree_diff > 0:
             rotation_flag = 1
 
-        rotation_matrix = cv2.getRotationMatrix2D((320, 240), rotation_degree, 1.0)
+        rotation_matrix = cv2.getRotationMatrix2D((320, 240), degree_diff, 1.0)
         frame = cv2.warpAffine(frame, rotation_matrix, (640, 480))
-
 
         copyframe = frame.copy()
         cutframe = frame[ymin:ymax, xmin:xmax]
@@ -492,31 +569,34 @@ def main():
         whiteratio = (cv2.countNonZero(binary_framedelta) / (width * height)) * 100
         
 
-        binary_eyelid = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY)[1]
+        binary_eyelid = cv2.threshold(gray, 95, 255, cv2.THRESH_BINARY)[1]
         horizon = cv2.filter2D(binary_eyelid, -1, kernel_hor)
         dilation = cv2.dilate(horizon, kernel_cal, iterations = 1)
-        lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 30)
+        lines = cv2.HoughLinesP(dilation, rho = 1, theta = np.pi / 360, threshold = 130, minLineLength = 130, maxLineGap = 100)
 
         if lines is not None:
             for line in lines:
                 x0, y0, x1, y1 = line[0]
                 gradient, degree, radian = EyelidParameterCalculation(x0, y0, x1, y1)
-            if gradient > -5 and gradient < 10:
-                x0list_main.append(x0)
-                y0list_main.append(y0)
-                x1list_main.append(x1)
-                y1list_main.append(y1)
-                gradlist_main.append(gradient)
-                caltime = time.time() - basetime
-                timelist_main.append(caltime)
-                degreelist_main.append(degree)
-                radianlist_main.append(radian)
-                cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 2)
+                if y0 > y1:
+                    degree = degree * (-1)
 
-                if whiteratio < 5:
-                    stopblinktime = time.time() - basetime
-                    stopblink_time_main.append(stopblinktime)
-                    stopblink_degree_main.append(degree)
+            x0list_main.append(x0)
+            y0list_main.append(y0)
+            x1list_main.append(x1)
+            y1list_main.append(y1)
+            gradlist_main.append(gradient)
+            caltime = time.time() - basetime
+            timelist_main.append(caltime)
+            degreelist_main.append(degree)
+            radianlist_main.append(radian)
+            ratiolist_main.append(whiteratio)
+            cv2.line(cutframe, (x0, y0), (x1, y1), (255, 255, 0), 2)
+
+            if whiteratio < 5:
+                stopblinktime = time.time() - basetime
+                stopblink_time_main.append(stopblinktime)
+                stopblink_degree_main.append(degree)
 
         else:
             comparison_time.append(False)
@@ -579,35 +659,75 @@ def main():
 
         if interval > 2:
             past_ave_ratio = sum(comparison_ratio[-3:]) / 3
-            if past_ave_ratio < 5:
+            timelist_threshcalculation_interval20.append(time.time() - basetime)
+            ratiolist_threshcalculation_interval20.append(whiteratio)
+            gradlist_threshcalculation_interval20.append(gradient)
+            degreelist_threshcalculation_interval20.append(degree)
+            if past_ave_ratio < 5 or (gradient < grad_low and whiteratio < ratio_low) :
                 noblinktime = time.time() - basetime
                 interval = time.time() - blinktime
                 noblinktimelist_detect.append(noblinktime)
                 tolerancetimelist_detect.append(interval)
 
-        if interval > 20 and rotation_flag == 1:
-            starttime_rotation = time.time() - basetime
-            ave_degree_main = sum(stopblink_degree_main) / len(stopblink_degree_main)
-            rotation_degree = ave_degree_main - ave_degree_TAD
-            print('Loop in (interval > 20)')
-            if abs(rotation_degree) > 0:
-                print('Loop in (rotation_degree > 0)')
- 
-                rotation_flag = 0
+            if interval > 20 and rotation_flag == 1:
+                timelist_threshcalculation_interval40.append(time.time() - basetime)
+                ratiolist_threshcalculation_interval40.append(whiteratio)
+                gradlist_threshcalculation_interval40.append(gradient)
+                degreelist_threshcalculation_interval40.append(degree)
 
-                print('Rotation complete, rotation angle : ', rotation_degree)
+                ave_degree_main = sum(stopblink_degree_main) / len(stopblink_degree_main)
+                degree_diff_cal = ave_degree_main - ave_degree_TAD
+                print('Loop in (interval > 20)')
 
-        if interval > 40 and rotation_flag == 0:
-            ave_degree_main_increase = sum(stopblink_degree_main) / len(stopblink_degree_main)
-            rotation_degree_increase = ave_degree_main_increase - ave_degree_TAD
-            print('Loop in (interval > 40)')
-            if abs(rotation_degree_increase) > abs(rotation_degree):
-                print('Loop in (degree increase)')
- 
-                rotation_flag = 2
+                if abs(degree_diff_cal) > 0:
 
-                print('Rotation complete, rotation angle : ', rotation_degree_increase)
-            # print('rotation start : ', starttime_rotation)
+                    print('Loop in (rotation_degree > 0)')
+
+                    degree_diff = degree_diff_cal
+
+                    max_ratio_interval20 = max(ratiolist_threshcalculation_interval20)
+                    max_grad_interval20 = max(gradlist_threshcalculation_interval20)
+                    max_degree_interval20 = max(degreelist_threshcalculation_interval20)
+                    ratio_high, ratio_low = (max_ratio_interval20 + 4), (max_ratio_interval20 - 10)
+                    grad_high, grad_low = (max_grad_interval20 + 2), (max_grad_interval20 - 1)
+
+                    starttimerotaionlist_interval20.append(time.time() - basetime)
+                    maxlist_ratio_interval20.append(max_ratio_interval20)
+                    maxlist_grad_interval20.append(max_grad_interval20)
+                    maxlist_degree_interval20.append(max_degree_interval20)
+                    degreedifflist_interval20.append(degree_diff)
+
+                    rotation_flag = 0
+
+                    print('Rotation complete(interval > 20), rotation angle : ', degree_diff)
+
+            if interval > 40 and rotation_flag == 0:
+
+                ave_degree_main_increase = sum(stopblink_degree_main) / len(stopblink_degree_main)
+                rotation_degree_increase_cal = ave_degree_main_increase - ave_degree_TAD
+                print('Loop in (interval > 40)')
+                if abs(rotation_degree_increase_cal) > 0:
+
+                    print('Loop in (degree increase)')
+
+                    rotation_degree_increase = rotation_degree_increase_cal
+
+                    max_ratio_interval40 = max(ratiolist_threshcalculation_interval40)
+                    max_grad_interval40 = max(gradlist_threshcalculation_interval40)
+                    max_degree_interval40 = max(degreelist_threshcalculation_interval40)
+                    ratio_high, ratio_low = (max_ratio_interval40 + 7), (max_ratio_interval40 - 7)
+                    grad_high, grad_low = (max_grad_interval40 + 1.5), (max_grad_interval40 - 1.5)
+                    
+                    starttimerotaionlist_interval40.append(time.time() - basetime)
+                    maxlist_ratio_interval40.append(max_ratio_interval40)
+                    maxlist_grad_interval40.append(max_grad_interval40)
+                    maxlist_degree_interval40.append(max_degree_interval40)
+                    degreedifflist_interval40.append(rotation_degree_increase)
+
+                    rotation_flag = 2
+
+                    print('Rotation complete(interval > 40), rotation angle : ', rotation_degree_increase)
+                # print('rotation start : ', starttime_rotation)
 
         runtime = time.time() - basetime
 
@@ -618,6 +738,7 @@ def main():
         cv2.putText(frame, str(interval), (150, 400), fonttype, 1, (0, 0, 255), 2)
 
         cv2.imshow('Frame', frame)
+        cv2.imshow('cutframe', cutframe)
 
         frame_save.write(frame)
         copyframe_save.write(copyframe)

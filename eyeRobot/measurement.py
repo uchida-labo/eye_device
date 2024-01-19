@@ -7,7 +7,7 @@ comparison_time, comparison_gradient, comparison_ratio = [0, 0], [0, 0], [0, 0]
 timelist_detec, gradientlist_detec, ratiolist_detec = [], [], []
 timelist, gradientlist, ratiolist = [], [], []
 
-date_number_path = 'Readbook_1215-1'
+date_number_path = 'PC_0119_4'
 
 def Frame_detect():
     cap = cv2.VideoCapture(0)
@@ -413,7 +413,7 @@ def main():
         dilation = cv2.dilate(horizon, kernel = kernel_detec, iterations = 1)
         closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, kernel = kernel_detec)
         opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel = kernel_detec)
-        lines = cv2.HoughLinesP(opening, rho = 1, theta = np.pi / 360, threshold = 100, minLineLength = 130, maxLineGap = 70)
+        lines = cv2.HoughLinesP(opening, rho = 1, theta = np.pi / 360, threshold = 130, minLineLength = 130, maxLineGap = 100)
         if lines is not None:
             for line in lines:
                 x0, y0, x1, y1 = line[0]
@@ -422,11 +422,6 @@ def main():
                 Gradient = 10 * (delta_Y / delta_X)
             if Gradient < 8 and Gradient > -5 and x1 < (xmax - 20):
                 cv2.line(cut_frame, (x0, y0), (x1, y1), (255, 255, 0), 2)
-
-        else:
-            comparison_gradient.append(False)
-            gradientlist_detec.append(False)
-            gradientlist.append(False)
 
         if avg is None:
             avg = gray.copy().astype("float")
@@ -437,10 +432,11 @@ def main():
         bin_fd = cv2.threshold(framedelta, 3, 255, cv2.THRESH_BINARY)[1]
         whiteratio = Ratio_calculation(bin_fd, xmin, xmax, ymin, ymax)
 
-        cmp_time = time.time() - base_time
-        comparison_time.append(cmp_time)
-        comparison_gradient.append(Gradient)
-        comparison_ratio.append(whiteratio)
+        if Gradient < 8 and Gradient > -5:
+            cmp_time = time.time() - base_time
+            comparison_time.append(cmp_time)
+            comparison_gradient.append(Gradient)
+            comparison_ratio.append(whiteratio)
 
         if Gradient < th_grad_high and Gradient > th_grad_low:
             time_diff = time.time() - blink_time
@@ -464,7 +460,7 @@ def main():
                         detec_time = time.time() - base_time
                         timelist_detec.append(detec_time)
                         gradientlist_detec.append(Gradient)
-                        ratiolist_detec.append(indexW)
+                        ratiolist_detec.append(whiteratio)
                         judge2 = 1
 
                     if judge1 == 0 and judge2 == 0:
@@ -474,27 +470,34 @@ def main():
                             detec_time = time.time() - base_time
                             timelist_detec.append(detec_time)
                             gradientlist_detec.append(Gradient)
-                            ratiolist_detec.append(indexV)
+                            ratiolist_detec.append(whiteratio)
                         else:
                             judge0 = 0
 
                 if judge0 == 0 and judge1 == 0 and judge2 == 0:
                     bscore_high = th_ratio_high + 2
                     bscore_low = th_ratio_low - 2
+                    if (whiteratio < bscore_high and whiteratio > th_ratio_high) or (whiteratio < th_ratio_low and whiteratio > bscore_low):
+                        val += 1
+                        blink_time = time.time()
+                        detec_time = time.time() - base_time
+                        timelist_detec.append(detec_time)
+                        gradientlist_detec.append(Gradient)
+                        ratiolist_detec.append(whiteratio)
                     if (indexW < bscore_high and indexW > th_ratio_high) or (indexW < th_ratio_low and indexW > bscore_low):
                         val += 1
                         blink_time = time.time()
                         detec_time = time.time() - base_time
                         timelist_detec.append(detec_time)
                         gradientlist_detec.append(Gradient)
-                        ratiolist_detec.append(indexW)
+                        ratiolist_detec.append(whiteratio)
                     if (indexV < bscore_high and indexV > th_ratio_high) or (indexV < th_ratio_low and indexV > bscore_low):
                         val += 1
                         blink_time = time.time()
                         detec_time = time.time() - base_time
                         timelist_detec.append(detec_time)
                         gradientlist_detec.append(Gradient)
-                        ratiolist_detec.append(indexV)
+                        ratiolist_detec.append(whiteratio)
 
 
         run_time = time.time() - base_time
@@ -533,6 +536,7 @@ def main():
     Excel_data_entry()
 
     cap.release()
+    frame_save.release()
     cutframe_save.release()
     gau_save.release()
     gray_save.release()
