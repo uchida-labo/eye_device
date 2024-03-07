@@ -13,6 +13,8 @@ timelist_threshcalculation_interval20, ratiolist_threshcalculation_interval20, g
 timelist_threshcalculation_interval40, ratiolist_threshcalculation_interval40, gradlist_threshcalculation_interval40, degreelist_threshcalculation_interval40 = [], [], [], []
 starttimerotaionlist_interval20, maxlist_ratio_interval20, maxlist_grad_interval20, maxlist_degree_interval20, degreedifflist_interval20 = [], [], [], [], []
 starttimerotaionlist_interval40, maxlist_ratio_interval40, maxlist_grad_interval40, maxlist_degree_interval40, degreedifflist_interval40 = [], [], [], [], []
+th_ratio_high_list, th_ratio_low_list, th_grad_high_list, th_grad_low_list = [], [], [], []
+
 
 date = time.strftime('%m%d_%H%M%S')
 
@@ -309,6 +311,7 @@ def ThreshAutoDetection(xmin, xmax, ymin, ymax):
 
         cv2.imshow('Binary', binary_framedelta)
         cv2.imshow('cut frame', cutframe)
+        cv2.imshow('Binary eyelid', binary_eyelid)
 
         frame_save.write(frame)
         copyframe_save.write(copyframe)
@@ -398,6 +401,11 @@ def ExcelEntry_main(savepath):
 
     ws['AC3'] = 'time'
     ws['AD3'] = 'tolerance time'
+
+    ws['AF3'] = 'grad_high'
+    ws['AG3'] = 'grad_low'
+    ws['AH3'] = 'ratio_high'
+    ws['AI3'] = 'ratio_low'
 
     ws_r['D2'] = 'thresh calculation for interval 20'
     ws_r['D3'] = 'time'
@@ -495,6 +503,12 @@ def ExcelEntry_main(savepath):
         ws_a.cell(i9 + 4, 6, comparison_gradient[i9])
         ws_a.cell(i9 + 4, 7, comparison_degree[i9])
 
+    for i10 in range(0, len(th_grad_high_list)):
+        ws.cell(i10 + 4, 32, th_grad_high_list[i10])
+        ws.cell(i10 + 4, 33, th_grad_low_list[i10])
+        ws.cell(i10 + 4, 34, th_ratio_high_list[i10])
+        ws.cell(i10 + 4, 35, th_ratio_low_list[i10])
+
     wb.save(excelpath_main)
     wb.close()
 
@@ -507,7 +521,6 @@ def ListAppendForMain(val ,detectiontime, gradient, whiteratio, degree, radian):
     radianlist_detec_main.append(radian)
 
 def main():
-    date = time.strftime('%m%d_%H%M%S')
     xmin, xmax, ymin, ymax = FrameAutoDetect()
     grad_high, grad_low, ratio_high, ratio_low, ave_degree_TAD = ThreshAutoDetection(xmin, xmax, ymin, ymax)
 
@@ -604,12 +617,12 @@ def main():
             comparison_degree.append(False)
             comparison_ratio.append(False)
 
-
-        comp_time = time.time() - basetime
-        comparison_time.append(comp_time)
-        comparison_gradient.append(gradient)
-        comparison_degree.append(degree)
-        comparison_ratio.append(whiteratio)
+        if gradient < 8 and gradient > -5:
+            comp_time = time.time() - basetime
+            comparison_time.append(comp_time)
+            comparison_gradient.append(gradient)
+            comparison_degree.append(degree)
+            comparison_ratio.append(whiteratio)
 
         if gradient < grad_high and gradient > grad_low:
             timediff = time.time() - blinktime
@@ -655,79 +668,104 @@ def main():
                             noblinktimelist_main.append(noblinktime)
                             intervallist_main.append(interval)
 
+                if interval > 0:
+                    bscore_high = ratio_high + 2
+                    bscore_low = ratio_low - 2
+                    if (whiteratio < bscore_high and whiteratio > ratio_high) or (whiteratio < ratio_low and whiteratio > bscore_low):
+                        val += 1
+                        blinktime = time.time()
+                        detectiontime = time.time() - basetime
+                        ListAppendForMain(val, detectiontime, gradient, whiteratio, degree, radian)
+                        interval = 0
+                    if (indexW < bscore_high and indexW > ratio_high) or (indexW < ratio_low and indexW > bscore_low):
+                        val += 1
+                        blinktime = time.time()
+                        detectiontime = time.time() - basetime
+                        ListAppendForMain(val, detectiontime, gradient, whiteratio, degree, radian)
+                        interval = 0
+                    if (indexV < bscore_high and indexV > ratio_high) or (indexV < ratio_low and indexV > bscore_low):
+                        val += 1
+                        blinktime = time.time()
+                        detectiontime = time.time() - basetime
+                        ListAppendForMain(val, detectiontime, gradient, whiteratio, degree, radian)
+                        interval = 0
+
         interval = time.time() - blinktime
 
-        if interval > 2:
-            past_ave_ratio = sum(comparison_ratio[-3:]) / 3
-            timelist_threshcalculation_interval20.append(time.time() - basetime)
-            ratiolist_threshcalculation_interval20.append(whiteratio)
-            gradlist_threshcalculation_interval20.append(gradient)
-            degreelist_threshcalculation_interval20.append(degree)
-            if past_ave_ratio < 5 or (gradient < grad_low and whiteratio < ratio_low) :
-                noblinktime = time.time() - basetime
-                interval = time.time() - blinktime
-                noblinktimelist_detect.append(noblinktime)
-                tolerancetimelist_detect.append(interval)
+        # if interval > 2:
+        #     past_ave_ratio = sum(comparison_ratio[-3:]) / 3
+        #     if past_ave_ratio < 5 or (gradient < grad_low and whiteratio < ratio_low) :
+        #         noblinktime = time.time() - basetime
+        #         interval = time.time() - blinktime
+        #         noblinktimelist_detect.append(noblinktime)
+        #         tolerancetimelist_detect.append(interval)
 
-            if interval > 20 and rotation_flag == 1:
-                timelist_threshcalculation_interval40.append(time.time() - basetime)
-                ratiolist_threshcalculation_interval40.append(whiteratio)
-                gradlist_threshcalculation_interval40.append(gradient)
-                degreelist_threshcalculation_interval40.append(degree)
+        #     timelist_threshcalculation_interval20.append(time.time() - basetime)
+        #     ratiolist_threshcalculation_interval20.append(whiteratio)
+        #     gradlist_threshcalculation_interval20.append(gradient)
+        #     degreelist_threshcalculation_interval20.append(degree)
 
-                ave_degree_main = sum(stopblink_degree_main) / len(stopblink_degree_main)
-                degree_diff_cal = ave_degree_main - ave_degree_TAD
-                print('Loop in (interval > 20)')
+        # if interval > 5:
 
-                if abs(degree_diff_cal) > 0:
+        #     if interval > 20 and rotation_flag == 1:
+        #         timelist_threshcalculation_interval40.append(time.time() - basetime)
+        #         ratiolist_threshcalculation_interval40.append(whiteratio)
+        #         gradlist_threshcalculation_interval40.append(gradient)
+        #         degreelist_threshcalculation_interval40.append(degree)
 
-                    print('Loop in (rotation_degree > 0)')
+        #         ave_degree_main = sum(stopblink_degree_main) / len(stopblink_degree_main)
+        #         degree_diff_cal = ave_degree_main - ave_degree_TAD
+        #         print('Loop in (interval > 20)')
 
-                    degree_diff = degree_diff_cal
+        #         if abs(degree_diff_cal) > 0:
 
-                    max_ratio_interval20 = max(ratiolist_threshcalculation_interval20)
-                    max_grad_interval20 = max(gradlist_threshcalculation_interval20)
-                    max_degree_interval20 = max(degreelist_threshcalculation_interval20)
-                    ratio_high, ratio_low = (max_ratio_interval20 + 4), (max_ratio_interval20 - 10)
-                    grad_high, grad_low = (max_grad_interval20 + 2), (max_grad_interval20 - 1)
+        #             print('Loop in (rotation_degree > 0)')
 
-                    starttimerotaionlist_interval20.append(time.time() - basetime)
-                    maxlist_ratio_interval20.append(max_ratio_interval20)
-                    maxlist_grad_interval20.append(max_grad_interval20)
-                    maxlist_degree_interval20.append(max_degree_interval20)
-                    degreedifflist_interval20.append(degree_diff)
+        #             degree_diff = degree_diff_cal
 
-                    rotation_flag = 0
+        #             max_ratio_interval20 = max(ratiolist_threshcalculation_interval20)
+        #             max_grad_interval20 = max(gradlist_threshcalculation_interval20)
+        #             max_degree_interval20 = max(degreelist_threshcalculation_interval20)
+        #             ratio_high, ratio_low = (max_ratio_interval20 + 4), (max_ratio_interval20 - 10)
+        #             grad_high, grad_low = (max_grad_interval20 + 2), (max_grad_interval20 - 1)
 
-                    print('Rotation complete(interval > 20), rotation angle : ', degree_diff)
+        #             starttimerotaionlist_interval20.append(time.time() - basetime)
+        #             maxlist_ratio_interval20.append(max_ratio_interval20)
+        #             maxlist_grad_interval20.append(max_grad_interval20)
+        #             maxlist_degree_interval20.append(max_degree_interval20)
+        #             degreedifflist_interval20.append(degree_diff)
 
-            if interval > 40 and rotation_flag == 0:
+        #             rotation_flag = 0
 
-                ave_degree_main_increase = sum(stopblink_degree_main) / len(stopblink_degree_main)
-                rotation_degree_increase_cal = ave_degree_main_increase - ave_degree_TAD
-                print('Loop in (interval > 40)')
-                if abs(rotation_degree_increase_cal) > 0:
+        #             print('Rotation complete(interval > 20), rotation angle : ', degree_diff)
 
-                    print('Loop in (degree increase)')
+        #     if interval > 35 and rotation_flag == 0:
 
-                    rotation_degree_increase = rotation_degree_increase_cal
+        #         ave_degree_main_increase = sum(stopblink_degree_main) / len(stopblink_degree_main)
+        #         rotation_degree_increase_cal = ave_degree_main_increase - ave_degree_TAD
+        #         print('Loop in (interval > 40)')
+        #         if abs(rotation_degree_increase_cal) > 0:
 
-                    max_ratio_interval40 = max(ratiolist_threshcalculation_interval40)
-                    max_grad_interval40 = max(gradlist_threshcalculation_interval40)
-                    max_degree_interval40 = max(degreelist_threshcalculation_interval40)
-                    ratio_high, ratio_low = (max_ratio_interval40 + 7), (max_ratio_interval40 - 7)
-                    grad_high, grad_low = (max_grad_interval40 + 1.5), (max_grad_interval40 - 1.5)
+        #             print('Loop in (degree increase)')
+
+        #             rotation_degree_increase = rotation_degree_increase_cal
+
+        #             max_ratio_interval40 = max(ratiolist_threshcalculation_interval40)
+        #             max_grad_interval40 = max(gradlist_threshcalculation_interval40)
+        #             max_degree_interval40 = max(degreelist_threshcalculation_interval40)
+        #             ratio_high, ratio_low = (max_ratio_interval40 + 4), (max_ratio_interval40 - 10)
+        #             grad_high, grad_low = (max_grad_interval40 + 1.5), (max_grad_interval40 - 1.5)
                     
-                    starttimerotaionlist_interval40.append(time.time() - basetime)
-                    maxlist_ratio_interval40.append(max_ratio_interval40)
-                    maxlist_grad_interval40.append(max_grad_interval40)
-                    maxlist_degree_interval40.append(max_degree_interval40)
-                    degreedifflist_interval40.append(rotation_degree_increase)
+        #             starttimerotaionlist_interval40.append(time.time() - basetime)
+        #             maxlist_ratio_interval40.append(max_ratio_interval40)
+        #             maxlist_grad_interval40.append(max_grad_interval40)
+        #             maxlist_degree_interval40.append(max_degree_interval40)
+        #             degreedifflist_interval40.append(rotation_degree_increase)
 
-                    rotation_flag = 2
+        #             rotation_flag = 2
 
-                    print('Rotation complete(interval > 40), rotation angle : ', rotation_degree_increase)
-                # print('rotation start : ', starttime_rotation)
+        #             print('Rotation complete(interval > 40), rotation angle : ', rotation_degree_increase)
+        #         # print('rotation start : ', starttime_rotation)
 
         runtime = time.time() - basetime
 
@@ -739,6 +777,11 @@ def main():
 
         cv2.imshow('Frame', frame)
         cv2.imshow('cutframe', cutframe)
+
+        th_ratio_high_list.append(ratio_high)
+        th_ratio_low_list.append(ratio_low)
+        th_grad_high_list.append(grad_high)
+        th_grad_low_list.append(grad_low)
 
         frame_save.write(frame)
         copyframe_save.write(copyframe)

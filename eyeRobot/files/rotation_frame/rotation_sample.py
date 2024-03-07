@@ -242,6 +242,10 @@ def ThreshDetection(xmin, xmax, ymin, ymax):
     return thresh_grad_high, thresh_grad_low, thresh_ratio_high, thresh_ratio_low, mode_degree
 
 def RotationFramePoint(xmin, xmax, ymin, ymax, radian):
+    plot1_x = xmin * math.cos(radian) + ymin * math.sin(radian)
+    plot1_y = 
+
+
     xmin_rotation = xmin * math.cos(radian) + ymin * math.sin(radian)
     xmax_rotation = xmax * math.cos(radian) + ymax * math.sin(radian)
     ymin_rotation = ymin * math.cos(radian) - xmin * math.sin(radian)
@@ -347,7 +351,30 @@ class Rotation(threading.Thread):
     
     def RotationFrameThreshDetaction(self):
         delta_degree = int(self.mode_degree_TD - self.mode_degree_MD)
-        self.xmin_rotation, self.xmax_rotation, self.ymin_rotation, self.ymax_rotation = RotationFramePoint(self.xmin, self.xmax, self.ymin, self.ymax, degree)
+        self.xmin_rotation, self.xmax_rotation, self.ymin_rotation, self.ymax_rotation = RotationFramePoint(self.xmin, self.xmax, self.ymin, self.ymax, delta_degree)
+
+        cap = cv2.VideoCapture(0)
+
+        basetime = time.time()
+        blinktime = time.time()
+        avg = None
+
+        while True:
+            ret, frame = cap.read()
+            if not ret: break
+
+            cutframe = frame[self.ymin_rotation:self.ymax_rotation, self.xmin_rotation:self.xmax_rotation]
+            gau = cv2.GaussianBlur(cutframe, (5, 5), 1)
+            gray = cv2.cvtColor(gau, cv2.COLOR_BGR2GRAY)
+
+            if avg is None:
+                avg = gray.copy().astype("float")
+                continue
+
+            cv2.accumulateWeighted(gray, avg, 0.8)
+            framedelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
+            bin_fd = cv2.threshold(framedelta, 3, 255, cv2.THRESH_BINARY)[1]
+            whiteratio = (cv2.countNonZero(bin_fd) / (width * height)) * 100
 
 
 

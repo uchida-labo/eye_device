@@ -1035,8 +1035,6 @@ def main():
     binaryframedelta_save.release()
     cv2.destroyAllWindows()
 
-    return version_rotation, starttime_rotation, rotation_degree
-
 # -------------
     
 if __name__ == '__main__':
